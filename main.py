@@ -1,0 +1,38 @@
+from dataloader import Dataset
+from model import BART
+from training import train_model
+from inference import inference
+import argparse
+import torch
+from torch.utils.data import DataLoader
+from transformers import BartForCausalLM, AutoModel, BartForConditionalGeneration
+
+def main(batch_size = 4,
+         epochs=10,
+         path_save_model = 'save_model/',
+         device = 'cpu'):
+   
+    model_name = "facebook/bart-large-cnn"
+
+    train_data = Dataset('data/train.csv', model_name)
+    valid_data = Dataset('data/valid.csv', model_name)
+    test_data = Dataset('data/test.csv', model_name)
+    train_dataloader = DataLoader(train_data, batch_size = batch_size, drop_last = True)
+    valid_dataloader = DataLoader(valid_data, batch_size = batch_size, drop_last = True)
+    test_dataloader = DataLoader(test_data, batch_size = 1, drop_last = True)
+
+    
+    # model = BART(model_name).to(device)
+    model = BartForConditionalGeneration.from_pretrained(model_name).to(device)
+    train_model(model, train_dataloader, valid_dataloader, device, epochs=epochs, path_save_model = path_save_model)
+    inference(model, test_dataloader, device)
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--epoch', '-e', type=int, default=10)
+    parser.add_argument('--batch_size', '-b', type=int, default=4)
+    args = parser.parse_args()
+    
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    print(device)
+    main(batch_size = args.batch_size, epochs = args.epoch, device=device)
