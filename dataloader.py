@@ -6,7 +6,7 @@ from transformers import AutoTokenizer
 class Dataset:
     def __init__(self, path, model_name) -> None:
         self.path = path
-        self.max_len = 128
+        self.max_len = 512
         self.tokenizer = AutoTokenizer.from_pretrained(model_name, do_lower_case=True)
         self.dataset = self.get_data()
         self.input, self.mask, self.target = self.create_dataset()
@@ -19,15 +19,17 @@ class Dataset:
     def create_dataset(self):
         _input, mask, target = [], [], []
         for idx in range(len(self.dataset)):
-            input_ids, attention_mask = self.create_input(idx)
-            _input.append(input_ids)
-            mask.append(attention_mask)
-            target.append(self.create_target(idx))
+            if self.dataset[idx][5] != '':
+                input_ids, attention_mask = self.create_input(idx)
+                _input.append(input_ids)
+                mask.append(attention_mask)
+                target.append(self.create_target(idx))
         return np.array(_input), np.array(mask), np.array(target)
 
     def create_input(self, idx):
+        text = f"[SEP] {self.dataset[idx][0]} [SEP] {self.dataset[idx][1]} [SEP]"
         encoded_sent = self.tokenizer.encode_plus(
-            text = self.dataset[idx][1],  
+            text = text,  
             add_special_tokens=True,
             truncation=True,       
             max_length=self.max_len,             
@@ -38,10 +40,11 @@ class Dataset:
         return encoded_sent.get('input_ids'), encoded_sent.get('attention_mask')
 
     def create_target(self, idx):
-        text = ""
+        text = f"[SEP] {self.dataset[idx][5]}"
         for i in range(7, len(self.dataset[idx])):
             if self.dataset[idx][i] != '':
                 text += " [SEP] " + self.dataset[idx][i]
+        text += " [SEP]"
         encoded_sent = self.tokenizer.encode_plus(
             text = text,  
             add_special_tokens=True, 
