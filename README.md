@@ -9,7 +9,7 @@ pip install -r requirements.txt
 ## 下載資料 
 ```
 cd Generate_Tagging
-gdown 1Ff9qqYtkIIMsu6AiaLqToCnxq8-bl9yc
+gdown 1TA9HlHWl3874uOIS7HIQ5E4C-L2Pe8il
 unzip data.zip
 ```
 

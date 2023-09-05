@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+import re
 import torch
 from transformers import AutoTokenizer
 
@@ -27,7 +28,8 @@ class Dataset:
         return np.array(_input), np.array(mask), np.array(target)
 
     def create_input(self, idx):
-        text = f"[SEP] {self.dataset[idx][0]} [SEP] {self.dataset[idx][1]} [SEP]"
+        context = self.create_context(idx)
+        text = f"[SEP] {self.dataset[idx][0]} [SEP] {context} [SEP]"
         encoded_sent = self.tokenizer.encode_plus(
             text = text,  
             add_special_tokens=True,
@@ -39,11 +41,22 @@ class Dataset:
             )
         return encoded_sent.get('input_ids'), encoded_sent.get('attention_mask')
 
+    def create_context(self, idx):
+        min_b, max_b = float('inf'), float('-inf')
+        for i in range(7, len(self.dataset[idx])):
+            if self.dataset[idx][i] != '':
+                numbers = re.findall(r'\d+', self.dataset[idx][i])
+                min_b = min(min_b, int(numbers[-2]))
+                max_b = max(max_b, int(numbers[-1]))
+        words = re.findall(r'\S+|[\s]+', self.dataset[idx][1])
+        # print("".join(words[min_b:max_b]))
+        return "".join(words[min_b:max_b])
+
     def create_target(self, idx):
         text = f"[SEP] {self.dataset[idx][5]}"
         for i in range(7, len(self.dataset[idx])):
             if self.dataset[idx][i] != '':
-                text += " [SEP] " + self.dataset[idx][i]
+                text += " [SEP] " + self.dataset[idx][i].split('(')[0]
         text += " [SEP]"
         encoded_sent = self.tokenizer.encode_plus(
             text = text,  
