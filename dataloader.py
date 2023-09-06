@@ -56,7 +56,8 @@ class Dataset:
         text = f"[SEP] {self.dataset[idx][5]}"
         for i in range(7, len(self.dataset[idx])):
             if self.dataset[idx][i] != '':
-                text += " [SEP] " + self.dataset[idx][i].split('(')[0]
+                left_parenthesis_index = self.dataset[idx][i].rfind('(')
+                text += " [SEP] " + "".join(self.dataset[idx][i][:left_parenthesis_index])
         text += " [SEP]"
         encoded_sent = self.tokenizer.encode_plus(
             text = text,  

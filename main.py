@@ -15,18 +15,18 @@ def main(batch_size = 4,
    
     model_name = "facebook/bart-large-cnn"
 
-    train_data = Dataset('data/train.csv', model_name)
-    valid_data = Dataset('data/valid.csv', model_name)
+    # train_data = Dataset('data/train.csv', model_name)
+    # valid_data = Dataset('data/valid.csv', model_name)
     test_data = Dataset('data/test.csv', model_name)
-    train_dataloader = DataLoader(train_data, batch_size = batch_size, drop_last = True)
-    valid_dataloader = DataLoader(valid_data, batch_size = batch_size, drop_last = True)
+    # train_dataloader = DataLoader(train_data, batch_size = batch_size, drop_last = True)
+    # valid_dataloader = DataLoader(valid_data, batch_size = batch_size, drop_last = True)
     test_dataloader = DataLoader(test_data, batch_size = 1, drop_last = True)
 
     # model = BART(model_name).to(device)
     tokenizer = AutoTokenizer.from_pretrained(model_name)
     model = BartForConditionalGeneration.from_pretrained(model_name).to(device)
-    if not test_mode:
-        train_model(model, train_dataloader, valid_dataloader, device, tokenizer=tokenizer, epochs=epochs, path_save_model = path_save_model)
+    # if not test_mode:
+    #     train_model(model, train_dataloader, valid_dataloader, device, tokenizer=tokenizer, epochs=epochs, path_save_model = path_save_model)
     best_pth = path_save_model + 'best_train.pth'
     inference(model, tokenizer, test_dataloader, device, path = path_save_model, best_pth=best_pth)
 
