@@ -5,9 +5,13 @@ import torch
 from transformers import AutoTokenizer
 
 class Dataset:
-    def __init__(self, path, model_name) -> None:
+    def __init__(self, path, model_name, relation_tag) -> None:
         self.path = path
         self.max_len = 512
+        if not relation_tag:
+            self.type = 5 #relation
+        elif relation_tag:
+            self.type = 6 #event
         self.tokenizer = AutoTokenizer.from_pretrained(model_name, do_lower_case=True)
         self.dataset = self.get_data()
         self.input, self.mask, self.target = self.create_dataset()
@@ -20,7 +24,7 @@ class Dataset:
     def create_dataset(self):
         _input, mask, target = [], [], []
         for idx in range(len(self.dataset)):
-            if self.dataset[idx][5] != '':
+            if self.dataset[idx][self.type] != '' and self.dataset[idx][self.type].split(' - ')[0] != 'Coreference':
                 input_ids, attention_mask = self.create_input(idx)
                 _input.append(input_ids)
                 mask.append(attention_mask)
@@ -49,11 +53,12 @@ class Dataset:
                 min_b = min(min_b, int(numbers[-2]))
                 max_b = max(max_b, int(numbers[-1]))
         words = re.findall(r'\S+|[\s]+', self.dataset[idx][1])
-        # print("".join(words[min_b:max_b]))
+        if words[min_b] == ' ':
+            min_b -= 1
         return "".join(words[min_b:max_b])
 
     def create_target(self, idx):
-        text = f"[SEP] {self.dataset[idx][5]}"
+        text = f"[SEP] {self.dataset[idx][self.type]}"
         for i in range(7, len(self.dataset[idx])):
             if self.dataset[idx][i] != '':
                 left_parenthesis_index = self.dataset[idx][i].rfind('(')
