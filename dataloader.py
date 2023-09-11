@@ -4,6 +4,8 @@ import re
 import torch
 from transformers import AutoTokenizer
 
+Relation = ['Causal Effect', 'Temporal']
+
 class Dataset:
     def __init__(self, path, model_name, relation_tag) -> None:
         self.path = path
@@ -24,7 +26,7 @@ class Dataset:
     def create_dataset(self):
         _input, mask, target = [], [], []
         for idx in range(len(self.dataset)):
-            if self.dataset[idx][self.type] != '' and self.dataset[idx][self.type].split(' - ')[0] != 'Coreference':
+            if self.dataset[idx][self.type] != '' and self.dataset[idx][self.type].split(' - ')[0] in Relation:
                 input_ids, attention_mask = self.create_input(idx)
                 _input.append(input_ids)
                 mask.append(attention_mask)
