@@ -12,13 +12,14 @@ def main(batch_size = 4,
          path_save_model = 'save_model/',
          device = 'cpu',
          test_mode = False,
-         relation_tag = False,):
+         relation_tag = False,
+         tagging = False,):
    
     model_name = "facebook/bart-large-cnn"
 
-    train_data = Dataset('data/train.csv', model_name, relation_tag = relation_tag)
-    valid_data = Dataset('data/valid.csv', model_name, relation_tag = relation_tag)
-    test_data = Dataset('data/test.csv', model_name, relation_tag = relation_tag)
+    train_data = Dataset('data/train.csv', model_name, relation_tag = relation_tag, tagging = tagging)
+    valid_data = Dataset('data/valid.csv', model_name, relation_tag = relation_tag, tagging = tagging)
+    test_data = Dataset('data/test.csv', model_name, relation_tag = relation_tag, tagging = tagging)
     train_dataloader = DataLoader(train_data, batch_size = batch_size, drop_last = True)
     valid_dataloader = DataLoader(valid_data, batch_size = batch_size, drop_last = True)
     test_dataloader = DataLoader(test_data, batch_size = 1, drop_last = True)
@@ -37,8 +38,9 @@ if __name__ == '__main__':
     parser.add_argument('--batch_size', '-b', type=int, default=4)
     parser.add_argument('--test_mode', '-tm', type=bool, default=False)
     parser.add_argument('--relation_tag', '-r', type=bool, default=False)
+    parser.add_argument('--tagging', '-t', type=bool, default=False)
     args = parser.parse_args()
     
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     print(device)
-    main(batch_size = args.batch_size, epochs = args.epoch, device=device, test_mode = args.test_mode, relation_tag = args.relation_tag)
+    main(batch_size = args.batch_size, epochs = args.epoch, device=device, test_mode = args.test_mode, relation_tag = args.relation_tag, tagging = args.tagging)
