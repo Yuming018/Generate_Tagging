@@ -4,6 +4,7 @@ from training import train_model
 from inference import inference
 import argparse
 import torch
+import os
 from torch.utils.data import DataLoader
 from transformers import AutoTokenizer, BartForConditionalGeneration
 
@@ -16,6 +17,13 @@ def main(batch_size = 4,
          tagging = False,):
    
     model_name = "facebook/bart-large-cnn"
+    
+    path_save_model = checkdir(path_save_model, relation_tag)
+
+    if tagging:
+        best_pth = path_save_model + 'tagging.pth'
+    else:
+        best_pth = path_save_model + 'question.pth'
 
     train_data = Dataset('data/train.csv', model_name, relation_tag = relation_tag, tagging = tagging)
     valid_data = Dataset('data/valid.csv', model_name, relation_tag = relation_tag, tagging = tagging)
@@ -28,9 +36,21 @@ def main(batch_size = 4,
     tokenizer = AutoTokenizer.from_pretrained(model_name)
     model = BartForConditionalGeneration.from_pretrained(model_name).to(device)
     if not test_mode:
-        train_model(model, train_dataloader, valid_dataloader, device, tokenizer=tokenizer, epochs=epochs, path_save_model = path_save_model)
-    best_pth = path_save_model + 'best_train.pth'
+        train_model(model, train_dataloader, valid_dataloader, device, tokenizer=tokenizer, epochs=epochs, path_save_model = best_pth)
     inference(model, tokenizer, test_dataloader, device, path = path_save_model, best_pth=best_pth)
+
+def checkdir(path_save_model, relation_tag):
+    if relation_tag :
+        target_path = 'Relation/'
+    else:
+        target_path = 'Event/'
+
+    if not os.path.isdir(path_save_model):
+        os.mkdir(path_save_model)
+    path_save_model = path_save_model + target_path
+    if not os.path.isdir(path_save_model):
+        os.mkdir(path_save_model)
+    return path_save_model
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()

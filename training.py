@@ -43,7 +43,7 @@ def train_model(model, train_dataloader, val_dataloader, device, tokenizer, epoc
                 batch_loss, batch_counts = 0, 0
                 t0_batch = time.time()
                 if val_loss < min_val_loss:
-                    torch.save(model.state_dict(), path_save_model + 'best_train.pth')
+                    torch.save(model.state_dict(), path_save_model)
                     min_val_loss = val_loss
                 scheduler.step(val_loss)
 
