@@ -17,8 +17,7 @@ def inference(model, tokenizer, test_dataloader, device, path, best_pth):
 
 def save_csv(input, target, path):
     row = ['ID', 'prediction', 'reference']
-    
-    path = path + 'predict.csv'
+
     with open(path, 'w', newline = '', encoding='utf-8') as csvfile:
         writer = csv.writer(csvfile, delimiter = ',')
         writer.writerow(row)
