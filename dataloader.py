@@ -11,16 +11,22 @@ class Dataset:
         self.path = path
         self.tagging = tagging
         self.max_len = 512
+        self.count = 0
         if not relation_tag:
-            self.type = 5 #event
+            self.type = 5 
+            self.tagging_type = 'Event'
         elif relation_tag:
-            self.type = 6 #relation
+            self.type = 6 
+            self.tagging_type = 'Relation'
+    
         self.tokenizer = AutoTokenizer.from_pretrained(model_name, do_lower_case=True)
-        self.dataset = self.get_data()
+        self.dataset = self.get_data(path)
+        if self.path == 'data/test.csv':
+            self.model_tagging = self.get_data(f'save_model/{self.tagging_type}/tagging.csv')
         self.input, self.mask, self.target = self.create_dataset()
 
-    def get_data(self):
-        data = pd.read_csv(self.path)
+    def get_data(self, path):
+        data = pd.read_csv(path)
         data = data.fillna('')
         return data.values
 
@@ -36,14 +42,18 @@ class Dataset:
 
     def create_input(self, idx):
         context = self.text_segmentation(idx)
-        text = f"[SEP] {self.dataset[idx][0]} [SEP] {context} [SEP]"
+        text = f"[SEP] {self.dataset[idx][0]} [SEP] {context}"
         if not self.tagging:
-            text += f" {self.dataset[idx][self.type]}"
-            for i in range(7, len(self.dataset[idx])):
-                if self.dataset[idx][i] != '':
-                    left_parenthesis_index = self.dataset[idx][i].rfind('(')
-                    text += " [SEP] " + "".join(self.dataset[idx][i][:left_parenthesis_index])
-            text += " [SEP]"
+            if self.path == 'data/test.csv':
+                text += self.model_tagging[self.count][2]
+                self.count += 1
+            else:  
+                text += f"[SEP] {self.dataset[idx][self.type]}"
+                for i in range(7, len(self.dataset[idx])):
+                    if self.dataset[idx][i] != '':
+                        left_parenthesis_index = self.dataset[idx][i].rfind('(')
+                        text += " [SEP] " + "".join(self.dataset[idx][i][:left_parenthesis_index])
+                text += " [SEP]"
         encoded_sent = self.enconder(text)
         return encoded_sent.get('input_ids'), encoded_sent.get('attention_mask')
 

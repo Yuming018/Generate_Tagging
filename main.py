@@ -19,7 +19,6 @@ def main(batch_size = 4,
     model_name = "facebook/bart-large-cnn"
     
     path_save_model = checkdir(path_save_model, relation_tag)
-
     if tagging:
         best_pth = path_save_model + 'tagging.pth'
         file_name = path_save_model + 'tagging.csv'
@@ -56,7 +55,7 @@ def checkdir(path_save_model, relation_tag):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--epoch', '-e', type=int, default=2)
+    parser.add_argument('--epoch', '-e', type=int, default=5)
     parser.add_argument('--batch_size', '-b', type=int, default=4)
     parser.add_argument('--test_mode', '-tm', type=bool, default=False)
     parser.add_argument('--relation_tag', '-r', type=bool, default=False)
