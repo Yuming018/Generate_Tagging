@@ -22,7 +22,7 @@ class Dataset:
     
         self.tokenizer = AutoTokenizer.from_pretrained(model_name, do_lower_case=True)
         self.dataset = self.get_data(path)
-        if self.path == 'data/test.csv':
+        if self.path == 'data/test.csv' and not self.tagging:
             self.model_tagging = self.get_data(f'save_model/{self.tagging_type}/tagging.csv')
         self.input, self.mask, self.target = self.create_dataset()
 

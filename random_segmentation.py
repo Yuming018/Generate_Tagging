@@ -80,7 +80,7 @@ def save_csv(type, context, tagging, question, path):
     with open(path, 'w', newline = '', encoding='utf-8') as csvfile:
         writer = csv.writer(csvfile, delimiter = ',')
         writer.writerow(row)
-        for i in range(len(input)):
+        for i in range(len(context)):
             writer.writerow([i, type[i], context[i], tagging[i], question[i]])
 
 if __name__ == '__main__':
