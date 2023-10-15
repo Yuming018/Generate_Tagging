@@ -1,6 +1,7 @@
 pandas
 torch
 transformers
+sentence_transformers
 gdown
 
 # cuda
