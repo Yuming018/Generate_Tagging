@@ -17,8 +17,6 @@ def train_model(model, train_dataloader, val_dataloader, device, tokenizer, epoc
         t0_epoch, t0_batch = time.time(), time.time()
         total_loss, batch_loss = 0, 0
         batch_counts = 0
-        gradient_accumulation_steps = 8
-        accu_loss = 0
 
         for step, batch in enumerate(train_dataloader):
             batch_counts +=1
@@ -32,17 +30,12 @@ def train_model(model, train_dataloader, val_dataloader, device, tokenizer, epoc
             # loss = loss_fn(output, b_labels)
             batch_loss += loss.item()
             total_loss += loss.item()
-            
-            loss = loss / gradient_accumulation_steps
-            accu_loss += loss
+
             loss.backward()
             torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
             
-            if (step+1) % gradient_accumulation_steps == 0:
-                optimizer.step()
-                scheduler.step(accu_loss)
-                optimizer.zero_grad()
-                accu_loss = 0
+            optimizer.step()
+            optimizer.zero_grad()
             
             time_elapsed = time.time() - t0_batch
             
@@ -54,7 +47,7 @@ def train_model(model, train_dataloader, val_dataloader, device, tokenizer, epoc
                 if val_loss < min_val_loss:
                     torch.save(model.state_dict(), path_save_model)
                     min_val_loss = val_loss
-                # scheduler.step(val_loss)
+                scheduler.step(val_loss)
 
         avg_train_loss = total_loss / len(train_dataloader)
         time_elapsed = time.time() - t0_epoch
