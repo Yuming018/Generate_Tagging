@@ -1,14 +1,28 @@
 import csv
 import torch
 from tqdm import tqdm
+from transformers import GenerationConfig
 
 def inference(model, tokenizer, test_dataloader, device, path, best_pth):
+    tagging_generation_config = GenerationConfig(
+        num_beams=4,
+        early_stopping=True,
+        decoder_start_token_id=0,
+        eos_token_id=model.config.eos_token_id,
+        pad_token_id=model.config.eos_token_id,
+        penalty_alpha=0.6, 
+        no_repeat_ngram_size=3,
+        top_k=4, 
+        temperature=0.5,
+        max_new_tokens=128,
+    )
+
     prediction, target, context = [], [], []
     model.load_state_dict(torch.load(best_pth))
     model.eval()
     for step, batch in tqdm(enumerate(test_dataloader)):
         b_input_ids, b_attn_mask, b_labels = tuple(t.to(device) for t in batch)
-        output = model.generate(b_input_ids, num_beams=2, min_length=0)
+        output = model.generate(input_ids = b_input_ids, generation_config=tagging_generation_config)
         output = tokenizer.batch_decode(output, skip_special_tokens=True, clean_up_tokenization_spaces=False)[0]
         target_ = tokenizer.batch_decode(b_labels, skip_special_tokens=True, clean_up_tokenization_spaces=False)[0]
         context_ = tokenizer.batch_decode(b_input_ids, skip_special_tokens=True, clean_up_tokenization_spaces=False)[0]
