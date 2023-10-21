@@ -16,7 +16,7 @@ def main(batch_size = 4,
          relation_tag = False,
          tagging = False,):
    
-    model_name = "bigscience/mt0-large"
+    model_name = "bigscience/mt0-base"
     
     path_save_model = checkdir(path_save_model, relation_tag)
     if tagging:
@@ -35,7 +35,6 @@ def main(batch_size = 4,
 
     
     tokenizer = AutoTokenizer.from_pretrained(model_name)
-
     # model = Mt0(model_name).to(device)
     model = create_model(model_name).to(device)
     if not test_mode:

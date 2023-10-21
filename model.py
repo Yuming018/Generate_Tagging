@@ -29,9 +29,9 @@ def create_model(model_name):
         r=8,
         lora_alpha=32, 
         lora_dropout=0.1,
-        bias = "lora_only",
     )
     peft_model = get_peft_model(model, lora_config)
+    peft_model.config.use_cache = False
     return peft_model
 
 

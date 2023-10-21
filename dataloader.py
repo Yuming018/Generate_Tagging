@@ -43,7 +43,7 @@ class Dataset:
 
     def create_input(self, idx):
         context = self.text_segmentation(idx)
-        text = f"[SEP] {self.dataset[idx][0]} [SEP] {context}"
+        text = f"[SEP] {self.dataset[idx][0]} [SEP] {context} [SEP]"
         if not self.tagging:
             if self.path == 'data/test.csv':
                 text += self.model_tagging[self.count][2]
@@ -55,6 +55,7 @@ class Dataset:
                         left_parenthesis_index = self.dataset[idx][i].rfind('(')
                         text += " [SEP] " + "".join(self.dataset[idx][i][:left_parenthesis_index])
                 text += " [SEP]"
+        print(text)
         encoded_sent = enconder(self.tokenizer, self.max_len, text = text)
         return encoded_sent.get('input_ids'), encoded_sent.get('attention_mask')
 
@@ -80,6 +81,8 @@ class Dataset:
             text += " [SEP]"
         elif not self.tagging:
             text = f"{self.dataset[idx][2]}"
+        print(text)
+        input()
         encoded_sent = enconder(self.tokenizer, self.max_len, text = text)
         return encoded_sent.get('input_ids')
 
