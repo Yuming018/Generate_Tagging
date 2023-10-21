@@ -5,7 +5,7 @@ import torch
 from transformers import AutoTokenizer
 from helper import enconder
 
-Relation = ['Causal Effect', 'Temporal']
+Relation = ['Causal Effect', 'Temporal', 'Coreference']
 
 class Dataset:
     def __init__(self, path, model_name, relation_tag, tagging) -> None:
@@ -55,7 +55,7 @@ class Dataset:
                         left_parenthesis_index = self.dataset[idx][i].rfind('(')
                         text += " [SEP] " + "".join(self.dataset[idx][i][:left_parenthesis_index])
                 text += " [SEP]"
-        encoded_sent = enconder(self.tokenizer, self.max_len, text)
+        encoded_sent = enconder(self.tokenizer, self.max_len, text = text)
         return encoded_sent.get('input_ids'), encoded_sent.get('attention_mask')
 
     def text_segmentation(self, idx):
@@ -80,7 +80,7 @@ class Dataset:
             text += " [SEP]"
         elif not self.tagging:
             text = f"{self.dataset[idx][2]}"
-        encoded_sent = enconder(self.tokenizer, self.max_len, text)
+        encoded_sent = enconder(self.tokenizer, self.max_len, text = text)
         return encoded_sent.get('input_ids')
 
     def __len__(self):

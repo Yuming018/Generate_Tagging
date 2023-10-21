@@ -33,9 +33,9 @@ def train_model(model, train_dataloader, val_dataloader, device, tokenizer, epoc
 
             loss.backward()
             torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
-            
             optimizer.step()
             optimizer.zero_grad()
+            
             
             time_elapsed = time.time() - t0_batch
             
@@ -47,7 +47,8 @@ def train_model(model, train_dataloader, val_dataloader, device, tokenizer, epoc
                 if val_loss < min_val_loss:
                     torch.save(model.state_dict(), path_save_model)
                     min_val_loss = val_loss
-                scheduler.step(val_loss)
+                scheduler.step(loss)
+                
 
         avg_train_loss = total_loss / len(train_dataloader)
         time_elapsed = time.time() - t0_epoch

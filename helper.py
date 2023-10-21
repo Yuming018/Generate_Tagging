@@ -19,7 +19,7 @@ def enconder(tokenizer, max_len=256, text = ''):
         add_special_tokens=True,
         truncation=True,  
         padding = 'longest' if max_len < 512 else 'max_length',   
-        # max_length='longest' if max_len < 512 else 512,        
+        max_length = max_len,        
         #return_tensors='pt',           
         return_attention_mask=True      
         )

@@ -13,7 +13,7 @@ def inference(model, tokenizer, test_dataloader, device, path, best_pth):
         target_ = tokenizer.batch_decode(b_labels, skip_special_tokens=True, clean_up_tokenization_spaces=False)[0]
         context_ = tokenizer.batch_decode(b_input_ids, skip_special_tokens=True, clean_up_tokenization_spaces=False)[0]
         prediction.append(output)
-        print(output)
+        # print(output)
         target.append(target_)
         context.append(context_)
     save_csv(prediction, target, context, path)
