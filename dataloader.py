@@ -55,7 +55,6 @@ class Dataset:
                         left_parenthesis_index = self.dataset[idx][i].rfind('(')
                         text += " [SEP] " + "".join(self.dataset[idx][i][:left_parenthesis_index])
                 text += " [SEP]"
-        print(text)
         encoded_sent = enconder(self.tokenizer, self.max_len, text = text)
         return encoded_sent.get('input_ids'), encoded_sent.get('attention_mask')
 
@@ -81,8 +80,6 @@ class Dataset:
             text += " [SEP]"
         elif not self.tagging:
             text = f"{self.dataset[idx][2]}"
-        print(text)
-        input()
         encoded_sent = enconder(self.tokenizer, self.max_len, text = text)
         return encoded_sent.get('input_ids')
 
