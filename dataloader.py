@@ -7,11 +7,11 @@ from helper import enconder
 
 Relation = ['Causal Effect', 'Temporal', 'Coreference']
 
-class Dataset:
+class Datasets:
     def __init__(self, path, model_name, relation_tag, tagging) -> None:
         self.path = path
         self.tagging = tagging
-        self.max_len = 512
+        self.max_len = 256
         self.count = 0
         if not relation_tag:
             self.type = 5 
@@ -24,7 +24,9 @@ class Dataset:
         self.dataset = self.get_data(path)
         if self.path == 'data/test.csv' and not self.tagging:
             self.model_tagging = self.get_data(f'save_model/{self.tagging_type}/tagging.csv')
-        self.input, self.mask, self.target = self.create_dataset()
+        self.input, self.mask, self.target = [], [], []
+        self.datasets = []
+        self.create_dataset()
 
     def get_data(self, path):
         data = pd.read_csv(path)
@@ -32,14 +34,17 @@ class Dataset:
         return data.values
 
     def create_dataset(self):
-        _input, mask, target = [], [], []
         for idx in range(len(self.dataset)):
+            dict = {}
             if self.dataset[idx][self.type] != '' and (self.type == 5 or self.dataset[idx][self.type].split(' - ')[0] in Relation):
                 input_ids, attention_mask = self.create_input(idx)
-                _input.append(input_ids)
-                mask.append(attention_mask)
-                target.append(self.create_target(idx))
-        return np.array(_input), np.array(mask), np.array(target)
+                dict['input_ids'] = input_ids
+                dict['attention_mask'] = attention_mask
+                dict['labels'] = self.create_target(idx)
+                self.input.append(input_ids)
+                self.mask.append(attention_mask)
+                self.target.append(self.create_target(idx))
+                self.datasets.append(dict)
 
     def create_input(self, idx):
         context = self.text_segmentation(idx)
@@ -87,6 +92,7 @@ class Dataset:
         return len(self.target)
 
     def __getitem__(self, idx):
+        return self.datasets[idx]
         _input = torch.tensor(self.input[idx])
         mask = torch.tensor(self.mask[idx])
         target = torch.tensor(self.target[idx])

@@ -47,7 +47,6 @@ def train_model(model, train_dataloader, val_dataloader, device, tokenizer, epoc
             # print(tokenizer.batch_decode(out, skip_special_tokens=True, clean_up_tokenization_spaces=False)[0])
             # input()
             loss = output['loss']
-            # loss = loss_fn(output, b_labels)
             batch_loss += loss.item()
             total_loss += loss.item()
 
