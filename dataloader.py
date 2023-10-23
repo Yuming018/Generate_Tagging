@@ -20,7 +20,7 @@ class Dataset:
             self.type = 6 
             self.tagging_type = 'Relation'
     
-        self.tokenizer = AutoTokenizer.from_pretrained(model_name, do_lower_case=True)
+        self.tokenizer = AutoTokenizer.from_pretrained(model_name)
         self.dataset = self.get_data(path)
         if self.path == 'data/test.csv' and not self.tagging:
             self.model_tagging = self.get_data(f'save_model/{self.tagging_type}/tagging.csv')

@@ -6,7 +6,7 @@ from helper import checkdir
 import argparse
 import torch
 from torch.utils.data import DataLoader
-from transformers import AutoTokenizer
+from transformers import AutoTokenizer, Trainer, DataCollatorForSeq2Seq, Seq2SeqTrainingArguments
 
 def main(batch_size = 4,
          epochs=10,
