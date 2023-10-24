@@ -75,9 +75,9 @@ def main(batch_size = 4,
             tokenizer=tokenizer,
         )
         trainer.train()
-        model.save_pretrained(best_pth)
+        model.save_pretrained(path_save_model)
         # train_model(model, train_dataloader, valid_dataloader, device, tokenizer=tokenizer, epochs=epochs, path_save_model = best_pth)
-    inference(model, tokenizer, test_dataloader, device, path = file_name, best_pth=best_pth)
+    inference(model, tokenizer, test_data, device, path = file_name, best_pth=best_pth, path_save_model = path_save_model)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()

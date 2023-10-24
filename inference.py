@@ -1,9 +1,15 @@
 import csv
 import torch
 from tqdm import tqdm
-from transformers import GenerationConfig
+from transformers import GenerationConfig, AutoModelForSeq2SeqLM, AutoTokenizer
+from peft import PeftConfig, PeftModel
 
-def inference(model, tokenizer, test_dataloader, device, path, best_pth):
+def inference(model, tokenizer, test_dataloader, device, path, best_pth, path_save_model):
+    config = PeftConfig.from_pretrained(path_save_model)
+    model = AutoModelForSeq2SeqLM.from_pretrained(config.base_model_name_or_path, device_map={"":0})
+    tokenizer = AutoTokenizer.from_pretrained(config.base_model_name_or_path)
+    model = PeftModel.from_pretrained(model, path_save_model, device_map={"":0})
+
     tagging_generation_config = GenerationConfig(
         num_beams=4,
         early_stopping=True,
@@ -18,19 +24,27 @@ def inference(model, tokenizer, test_dataloader, device, path, best_pth):
     )
 
     prediction, target, context = [], [], []
-    model.load_state_dict(torch.load(best_pth))
+    # model.load_state_dict(torch.load(best_pth))
     model.half()
     model.eval()
-    for step, batch in tqdm(enumerate(test_dataloader)):
-        b_input_ids, b_attn_mask, b_labels = tuple(t.to(device) for t in batch)
-        output = model.generate(input_ids = b_input_ids, generation_config=tagging_generation_config)
-        output = tokenizer.batch_decode(output, skip_special_tokens=True, clean_up_tokenization_spaces=False)[0]
-        target_ = tokenizer.batch_decode(b_labels, skip_special_tokens=True, clean_up_tokenization_spaces=False)[0]
-        context_ = tokenizer.batch_decode(b_input_ids, skip_special_tokens=True, clean_up_tokenization_spaces=False)[0]
-        prediction.append(output)
-        # print(output)
-        target.append(target_)
-        context.append(context_)
+    for data in tqdm(test_dataloader):
+        input_ids, label = data['input_ids'], data['labels']
+        input_ids = torch.tensor(input_ids).to(device)
+        output = model.generate(input_ids=input_ids.unsqueeze(0), generation_config=tagging_generation_config)
+        prediction.append(tokenizer.decode(output[0], skip_special_tokens=True))
+        target.append(tokenizer.decode(label, skip_special_tokens=True))
+        context.append(tokenizer.decode(input_ids, skip_special_tokens=True))
+
+    # for step, batch in tqdm(enumerate(test_dataloader)):
+    #     b_input_ids, _, b_labels = tuple(t.to(device) for t in batch)
+    #     output = model.generate(input_ids = b_input_ids, generation_config=tagging_generation_config)
+    #     output = tokenizer.batch_decode(output, skip_special_tokens=True, clean_up_tokenization_spaces=False)[0]
+    #     target_ = tokenizer.batch_decode(b_labels, skip_special_tokens=True, clean_up_tokenization_spaces=False)[0]
+    #     context_ = tokenizer.batch_decode(b_input_ids, skip_special_tokens=True, clean_up_tokenization_spaces=False)[0]
+    #     prediction.append(output)
+    #     # print(output)
+    #     target.append(target_)
+    #     context.append(context_)
     save_csv(prediction, target, context, path)
 
 def save_csv(prediction, target, context, path):
