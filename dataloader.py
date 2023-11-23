@@ -1,11 +1,15 @@
 import pandas as pd
 import numpy as np
+from tqdm import tqdm
 import re
 import torch
 from transformers import AutoTokenizer
 from helper import enconder
 
-Relation = ['Causal Effect', 'Temporal', 'Coreference']
+Relation = ['Causal Effect',
+            'Temporal',
+            # 'Coreference'
+            ]
 
 class Datasets:
     def __init__(self, path, model_name, relation_tag, tagging) -> None:
@@ -34,32 +38,41 @@ class Datasets:
         return data.values
 
     def create_dataset(self):
-        for idx in range(len(self.dataset)):
+        for idx in tqdm(range(len(self.dataset))):
             dict = {}
             if self.dataset[idx][self.type] != '' and (self.type == 5 or self.dataset[idx][self.type].split(' - ')[0] in Relation):
                 input_ids, attention_mask = self.create_input(idx)
+                target_ids = self.create_target(idx)
                 dict['input_ids'] = input_ids
                 dict['attention_mask'] = attention_mask
-                dict['labels'] = self.create_target(idx)
+                dict['labels'] =target_ids
                 self.input.append(input_ids)
                 self.mask.append(attention_mask)
-                self.target.append(self.create_target(idx))
+                self.target.append(target_ids)
                 self.datasets.append(dict)
 
     def create_input(self, idx):
         context = self.text_segmentation(idx)
-        text = f"[SEP] {self.dataset[idx][0]} [SEP] {context} [SEP]"
-        if not self.tagging:
+        text = f"[Type] {self.dataset[idx][0]} [Context] {context} "
+        if self.tagging:
+            text += '[END]'
+        else:
             if self.path == 'data/test.csv':
-                text += self.model_tagging[self.count][2]
+                text += f'[CLS] {self.model_tagging[self.count][2]}'
                 self.count += 1
             else:  
-                text += f"[SEP] {self.dataset[idx][self.type]}"
+                text += f"[{self.tagging_type}] {self.dataset[idx][self.type]}"
                 for i in range(7, len(self.dataset[idx])):
                     if self.dataset[idx][i] != '':
                         left_parenthesis_index = self.dataset[idx][i].rfind('(')
-                        text += " [SEP] " + "".join(self.dataset[idx][i][:left_parenthesis_index])
-                text += " [SEP]"
+                        if self.tagging_type == 'Relation' and i == 7:
+                            text += " [Event1] " + "".join(self.dataset[idx][i][:left_parenthesis_index])
+                        elif self.tagging_type == 'Relation' and i == 8:
+                            text += " [Event2] " + "".join(self.dataset[idx][i][:left_parenthesis_index])
+                        elif self.tagging_type == 'Event':
+                            text += " [Arg] " + "".join(self.dataset[idx][i][:left_parenthesis_index])
+                text += " [END]"
+        
         encoded_sent = enconder(self.tokenizer, self.max_len, text = text)
         return encoded_sent.get('input_ids'), encoded_sent.get('attention_mask')
 
@@ -77,14 +90,20 @@ class Datasets:
 
     def create_target(self, idx):
         if self.tagging:
-            text = f"[SEP] {self.dataset[idx][self.type]}"
+            text = f"[{self.tagging_type}] {self.dataset[idx][self.type]}"
             for i in range(7, len(self.dataset[idx])):
                 if self.dataset[idx][i] != '':
                     left_parenthesis_index = self.dataset[idx][i].rfind('(')
-                    text += " [SEP] " + "".join(self.dataset[idx][i][:left_parenthesis_index])
-            text += " [SEP]"
+                    if self.tagging_type == 'Relation' and i == 7:
+                            text += " [Event1] " + "".join(self.dataset[idx][i][:left_parenthesis_index])
+                    elif self.tagging_type == 'Relation' and i == 8:
+                        text += " [Event2] " + "".join(self.dataset[idx][i][:left_parenthesis_index])
+                    elif self.tagging_type == 'Event':
+                        text += " [Arg] " + "".join(self.dataset[idx][i][:left_parenthesis_index])
+            text += " [END]"
         elif not self.tagging:
             text = f"{self.dataset[idx][2]}"
+
         encoded_sent = enconder(self.tokenizer, self.max_len, text = text)
         return encoded_sent.get('input_ids')
 

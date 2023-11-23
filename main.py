@@ -1,6 +1,6 @@
 from dataloader import Datasets
 from model import create_model
-from training import train_model
+from training import train_model, training
 from inference import inference
 from helper import checkdir
 import argparse
@@ -17,7 +17,7 @@ def main(batch_size = 4,
          relation_tag = False,
          tagging = False,):
    
-    model_name = "bigscience/mt0-base"
+    model_name = "bigscience/mt0-large"
     
     path_save_model = checkdir(path_save_model, relation_tag)
     if tagging:
@@ -37,52 +37,14 @@ def main(batch_size = 4,
     tokenizer = AutoTokenizer.from_pretrained(model_name)
     model = create_model(model_name).to(device)
     if not test_mode:
-        collate_fn = DataCollatorForSeq2Seq(
-            tokenizer,
-            model=model,
-            label_pad_token_id=-100,
-            pad_to_multiple_of=8
-        )
-
-        args = Seq2SeqTrainingArguments(
-            output_dir="./checkpoints",
-            overwrite_output_dir=True,
-            per_device_train_batch_size=1,
-            gradient_accumulation_steps=8,
-            num_train_epochs=5,
-            learning_rate=1e-3,
-            # optim='adafactor',
-            fp16=False,
-            logging_steps=50,
-            evaluation_strategy="steps",
-            eval_steps=200,
-            save_strategy="steps",
-            save_steps=100, # 保存checkpoint的step数
-            save_total_limit=5, # 最多保存5个checkpoint
-            predict_with_generate=True,
-            weight_decay=0.01,
-            include_inputs_for_metrics=True,
-            lr_scheduler_type="polynomial",
-        )
-
-        trainer = Trainer(
-            model=model,
-            train_dataset=train_data,
-            eval_dataset=valid_data,
-            # compute_metrics=compute_metrics,
-            args=args,
-            data_collator=collate_fn,
-            tokenizer=tokenizer,
-        )
-        trainer.train()
-        model.save_pretrained(path_save_model)
+        training(model, tokenizer, train_data, valid_data, path_save_model, epochs=epochs, batch_size = batch_size)
         # train_model(model, train_dataloader, valid_dataloader, device, tokenizer=tokenizer, epochs=epochs, path_save_model = best_pth)
     inference(model, tokenizer, test_data, device, path = file_name, best_pth=best_pth, path_save_model = path_save_model)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--epoch', '-e', type=int, default=3)
-    parser.add_argument('--batch_size', '-b', type=int, default=4)
+    parser.add_argument('--epoch', '-e', type=int, default=5)
+    parser.add_argument('--batch_size', '-b', type=int, default=2)
     parser.add_argument('--test_mode', '-tm', type=bool, default=False)
     parser.add_argument('--relation_tag', '-r', type=bool, default=False)
     parser.add_argument('--tagging', '-t', type=bool, default=False)

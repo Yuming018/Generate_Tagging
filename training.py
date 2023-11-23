@@ -2,6 +2,7 @@ import torch
 import time
 import numpy as np
 from transformers import GenerationConfig
+from transformers import AutoTokenizer, Trainer, DataCollatorForSeq2Seq, Seq2SeqTrainingArguments
 
 loss_fn = torch.nn.CrossEntropyLoss()
 
@@ -88,6 +89,47 @@ def evaluate(model, val_dataloader, device):
         val_loss.append(loss.item())
         
     return np.mean(val_loss)
+
+def training(model, tokenizer, train_data, valid_data, path_save_model, epochs, batch_size):
+    collate_fn = DataCollatorForSeq2Seq(
+        tokenizer,
+        model=model,
+        label_pad_token_id=-100,
+        pad_to_multiple_of=8
+    )
+
+    args = Seq2SeqTrainingArguments(
+        output_dir="./checkpoints",
+        overwrite_output_dir=True,
+        per_device_train_batch_size=batch_size,
+        gradient_accumulation_steps=8,
+        num_train_epochs=epochs,
+        learning_rate=1e-3,
+        # optim='adafactor',
+        fp16=False,
+        logging_steps=50,
+        evaluation_strategy="steps",
+        eval_steps=200,
+        save_strategy="steps",
+        save_steps=100, # 保存checkpoint的step数
+        save_total_limit=5, # 最多保存5个checkpoint
+        predict_with_generate=True,
+        weight_decay=0.01,
+        include_inputs_for_metrics=True,
+        lr_scheduler_type="polynomial",
+    )
+
+    trainer = Trainer(
+        model=model,
+        train_dataset=train_data,
+        eval_dataset=valid_data,
+        # compute_metrics=compute_metrics,
+        args=args,
+        data_collator=collate_fn,
+        tokenizer=tokenizer,
+    )
+    trainer.train()
+    model.save_pretrained(path_save_model)
 
 if __name__ == '__main__':
     train_model()
