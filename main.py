@@ -11,7 +11,7 @@ from transformers import AutoTokenizer, Trainer, DataCollatorForSeq2Seq, Seq2Seq
 
 def main(batch_size = 4,
          epochs=10,
-         path_save_model = 'save_model/',
+         path_save_model = 'save_model',
          device = 'cpu',
          test_mode = False,
          relation_tag = False,
@@ -19,13 +19,13 @@ def main(batch_size = 4,
    
     model_name = "bigscience/mt0-large"
     
-    path_save_model = checkdir(path_save_model, relation_tag)
+    path_save_model = checkdir(path_save_model, relation_tag, tagging)
     if tagging:
-        best_pth = path_save_model + 'tagging.pth'
         file_name = path_save_model + 'tagging.csv'
     else:
-        best_pth = path_save_model + 'question.pth'
         file_name = path_save_model + 'question.csv'
+    print(path_save_model)
+    print(file_name)
     
     train_data = Datasets('data/train.csv', model_name, relation_tag = relation_tag, tagging = tagging)
     valid_data = Datasets('data/valid.csv', model_name, relation_tag = relation_tag, tagging = tagging)
@@ -37,9 +37,9 @@ def main(batch_size = 4,
     tokenizer = AutoTokenizer.from_pretrained(model_name)
     model = create_model(model_name).to(device)
     if not test_mode:
-        training(model, tokenizer, train_data, valid_data, path_save_model, epochs=epochs, batch_size = batch_size)
+        training(model, tokenizer, train_data, valid_data, path_save_model, epochs=epochs, batch_size = batch_size, tagging = tagging)
         # train_model(model, train_dataloader, valid_dataloader, device, tokenizer=tokenizer, epochs=epochs, path_save_model = best_pth)
-    inference(model, tokenizer, test_data, device, path = file_name, best_pth=best_pth, path_save_model = path_save_model)
+    inference(model, tokenizer, test_data, device, path = file_name, path_save_model = path_save_model)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()

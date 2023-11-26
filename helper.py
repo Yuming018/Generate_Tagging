@@ -1,16 +1,24 @@
 import os
 
-def checkdir(path_save_model, relation_tag):
+def checkdir(path_save_model, relation_tag, tagging):
+    
+    if not os.path.isdir(path_save_model):
+        os.mkdir(path_save_model)
+    
     if relation_tag :
-        target_path = 'Relation/'
+        path_save_model += '/Relation'
     else:
-        target_path = 'Event/'
+        path_save_model += '/Event'
+    if not os.path.isdir(path_save_model):
+        os.mkdir(path_save_model)
+    
+    if tagging :
+        path_save_model += '/tagging/'
+    else:
+        path_save_model += '/question/'
+    if not os.path.isdir(path_save_model):
+        os.mkdir(path_save_model)
 
-    if not os.path.isdir(path_save_model):
-        os.mkdir(path_save_model)
-    path_save_model = path_save_model + target_path
-    if not os.path.isdir(path_save_model):
-        os.mkdir(path_save_model)
     return path_save_model
 
 def enconder(tokenizer, max_len=256, text = ''):

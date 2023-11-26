@@ -23,7 +23,7 @@ def SentenceTransformer_eval(dataset):
     return record, score
 
 def save_csv(dataset, path):
-    row_1 = ["Story", "Question_predict", "Question_target", "Sentence_Bert_Score"]
+    row_1 = ['ID', "Story", "Question_predict", "Question_target", "Sentence_Bert_Score"]
     with open(path, 'w', newline = '', encoding='utf-8') as csvfile:
         writer = csv.writer(csvfile, delimiter = ',')
         writer.writerow(row_1)

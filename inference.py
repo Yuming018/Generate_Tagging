@@ -4,7 +4,7 @@ from tqdm import tqdm
 from transformers import GenerationConfig, AutoModelForSeq2SeqLM, AutoTokenizer
 from peft import PeftConfig, PeftModel
 
-def inference(model, tokenizer, test_dataloader, device, path, best_pth, path_save_model):
+def inference(model, tokenizer, test_dataloader, device, path, path_save_model):
     config = PeftConfig.from_pretrained(path_save_model)
     model = AutoModelForSeq2SeqLM.from_pretrained(config.base_model_name_or_path, device_map={"":0})
     tokenizer = AutoTokenizer.from_pretrained(config.base_model_name_or_path)

@@ -90,16 +90,16 @@ def evaluate(model, val_dataloader, device):
         
     return np.mean(val_loss)
 
-def training(model, tokenizer, train_data, valid_data, path_save_model, epochs, batch_size):
+def training(model, tokenizer, train_data, valid_data, path_save_model, epochs, batch_size, tagging):
     collate_fn = DataCollatorForSeq2Seq(
         tokenizer,
         model=model,
         label_pad_token_id=-100,
         pad_to_multiple_of=8
     )
-
+    print(path_save_model)
     args = Seq2SeqTrainingArguments(
-        output_dir="./checkpoints",
+        output_dir= path_save_model + "checkpoints",
         overwrite_output_dir=True,
         per_device_train_batch_size=batch_size,
         gradient_accumulation_steps=8,
