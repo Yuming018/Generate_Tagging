@@ -24,12 +24,10 @@ def main(batch_size = 4,
         file_name = path_save_model + 'tagging.csv'
     else:
         file_name = path_save_model + 'question.csv'
-    print(path_save_model)
-    print(file_name)
     
-    train_data = Datasets('data/train.csv', model_name, relation_tag = relation_tag, tagging = tagging)
-    valid_data = Datasets('data/valid.csv', model_name, relation_tag = relation_tag, tagging = tagging)
-    test_data = Datasets('data/test.csv', model_name, relation_tag = relation_tag, tagging = tagging)
+    train_data = Datasets('data/train.csv', model_name, relation_tag = relation_tag, tagging = tagging, path_save_model = path_save_model)
+    valid_data = Datasets('data/valid.csv', model_name, relation_tag = relation_tag, tagging = tagging, path_save_model = path_save_model)
+    test_data = Datasets('data/test.csv', model_name, relation_tag = relation_tag, tagging = tagging, path_save_model = path_save_model)
     train_dataloader = DataLoader(train_data, batch_size = batch_size, drop_last = True)
     valid_dataloader = DataLoader(valid_data, batch_size = batch_size, drop_last = True)
     test_dataloader = DataLoader(test_data, batch_size = 1, drop_last = True)

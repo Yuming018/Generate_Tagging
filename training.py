@@ -97,7 +97,7 @@ def training(model, tokenizer, train_data, valid_data, path_save_model, epochs, 
         label_pad_token_id=-100,
         pad_to_multiple_of=8
     )
-    print(path_save_model)
+    
     args = Seq2SeqTrainingArguments(
         output_dir= path_save_model + "checkpoints",
         overwrite_output_dir=True,

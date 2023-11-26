@@ -4,6 +4,8 @@ from tqdm import tqdm
 import re
 import torch
 from transformers import AutoTokenizer
+from copy import deepcopy
+from collections import defaultdict, Counter
 from helper import enconder
 
 Relation = ['Causal Effect',
@@ -11,25 +13,57 @@ Relation = ['Causal Effect',
             # 'Coreference'
             ]
 
+Event = ['State',
+         'Action']
+
+Event_arg = {'State':{
+                'Entity' : None,
+                'Trigger_Word' : None,
+                'Value' : None,
+                'Agent' : None,
+                'Emotion' : None,
+                'Time' : None,
+                'Key' : None,
+                'Topic' : None,
+                'Emotion_Type' : None,
+                'Place' : None,
+                'Trigger_word' : None,
+            },
+             'Action': {
+                'Actor' : None,
+                'Trigger_Word' : None,
+                'Direct Object' : None,
+                'Msg (Direct)' : None,
+                'Speaker' : None,
+                'Place' : None,
+                'Time' : None,
+                'Addressee' : None,
+                'Topic (Indirect)' : None,
+                'Indirect Object' : None,
+                'Tool or Method' : None,
+                'Trigger_word' : None,
+             }}
+
 class Datasets:
-    def __init__(self, path, model_name, relation_tag, tagging) -> None:
+    def __init__(self, path, model_name, relation_tag, tagging, path_save_model) -> None:
         self.path = path
         self.tagging = tagging
         self.max_len = 256
         self.count = 0
         if not relation_tag:
-            self.type = 5 
+            self.index = 5 #index
             self.tagging_type = 'Event'
         elif relation_tag:
-            self.type = 6 
+            self.index = 6 #index
             self.tagging_type = 'Relation'
     
         self.tokenizer = AutoTokenizer.from_pretrained(model_name)
         self.dataset = self.get_data(path)
         if self.path == 'data/test.csv' and not self.tagging:
-            self.model_tagging = self.get_data(f'save_model/{self.tagging_type}/tagging.csv')
+            self.model_tagging = self.get_data(path_save_model + 'tagging.csv')
         self.input, self.mask, self.target = [], [], []
         self.datasets = []
+        self.temp = defaultdict(Counter)
         self.create_dataset()
 
     def get_data(self, path):
@@ -40,12 +74,13 @@ class Datasets:
     def create_dataset(self):
         for idx in tqdm(range(len(self.dataset))):
             dict = {}
-            if self.dataset[idx][self.type] != '' and (self.type == 5 or self.dataset[idx][self.type].split(' - ')[0] in Relation):
+            tag_type = self.dataset[idx][self.index].split(' - ')[0]
+            if tag_type in Event or tag_type in Relation:
                 input_ids, attention_mask = self.create_input(idx)
                 target_ids = self.create_target(idx)
                 dict['input_ids'] = input_ids
                 dict['attention_mask'] = attention_mask
-                dict['labels'] =target_ids
+                dict['labels'] = target_ids
                 self.input.append(input_ids)
                 self.mask.append(attention_mask)
                 self.target.append(target_ids)
@@ -61,7 +96,7 @@ class Datasets:
                 text += f'[CLS] {self.model_tagging[self.count][2]}'
                 self.count += 1
             else:  
-                text += f"[{self.tagging_type}] {self.dataset[idx][self.type]}"
+                text += f"[{self.tagging_type}] {self.dataset[idx][self.index]}"
                 for i in range(7, len(self.dataset[idx])):
                     if self.dataset[idx][i] != '':
                         left_parenthesis_index = self.dataset[idx][i].rfind('(')
@@ -72,7 +107,6 @@ class Datasets:
                         elif self.tagging_type == 'Event':
                             text += " [Arg] " + "".join(self.dataset[idx][i][:left_parenthesis_index])
                 text += " [END]"
-        
         encoded_sent = enconder(self.tokenizer, self.max_len, text = text)
         return encoded_sent.get('input_ids'), encoded_sent.get('attention_mask')
 
@@ -89,8 +123,9 @@ class Datasets:
         return "".join(words[min_b:max_b])
 
     def create_target(self, idx):
+        temp = deepcopy(Event_arg[self.dataset[idx][self.index].split(' - ')[0]])
         if self.tagging:
-            text = f"[{self.tagging_type}] {self.dataset[idx][self.type]}"
+            text = f"[{self.tagging_type}] {self.dataset[idx][self.index]} "
             for i in range(7, len(self.dataset[idx])):
                 if self.dataset[idx][i] != '':
                     left_parenthesis_index = self.dataset[idx][i].rfind('(')
@@ -99,11 +134,14 @@ class Datasets:
                     elif self.tagging_type == 'Relation' and i == 8:
                         text += " [Event2] " + "".join(self.dataset[idx][i][:left_parenthesis_index])
                     elif self.tagging_type == 'Event':
-                        text += " [Arg] " + "".join(self.dataset[idx][i][:left_parenthesis_index])
-            text += " [END]"
+                        temp[self.dataset[idx][i][:left_parenthesis_index].split(' - ')[0]] = " ".join(self.dataset[idx][i][:left_parenthesis_index].split(' - ')[1:])
+                        # text += " [Arg] " + "".join(self.dataset[idx][i][:left_parenthesis_index])
+                        # self.temp[self.dataset[idx][self.index].split(' - ')[0]][self.dataset[idx][i][:left_parenthesis_index].split(' - ')[0]] = 1
+            for key, val in temp.items():
+                text += f'[{key}] {val} '
+            text += "[END]"
         elif not self.tagging:
             text = f"{self.dataset[idx][2]}"
-
         encoded_sent = enconder(self.tokenizer, self.max_len, text = text)
         return encoded_sent.get('input_ids')
 
