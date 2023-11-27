@@ -123,7 +123,7 @@ class Datasets:
         return "".join(words[min_b:max_b])
 
     def create_target(self, idx):
-        temp = deepcopy(Event_arg[self.dataset[idx][self.index].split(' - ')[0]])
+        # temp = deepcopy(Event_arg[self.dataset[idx][self.index].split(' - ')[0]])
         if self.tagging:
             text = f"[{self.tagging_type}] {self.dataset[idx][self.index]} "
             for i in range(7, len(self.dataset[idx])):
@@ -134,11 +134,13 @@ class Datasets:
                     elif self.tagging_type == 'Relation' and i == 8:
                         text += " [Event2] " + "".join(self.dataset[idx][i][:left_parenthesis_index])
                     elif self.tagging_type == 'Event':
-                        temp[self.dataset[idx][i][:left_parenthesis_index].split(' - ')[0]] = " ".join(self.dataset[idx][i][:left_parenthesis_index].split(' - ')[1:])
                         # text += " [Arg] " + "".join(self.dataset[idx][i][:left_parenthesis_index])
                         # self.temp[self.dataset[idx][self.index].split(' - ')[0]][self.dataset[idx][i][:left_parenthesis_index].split(' - ')[0]] = 1
-            for key, val in temp.items():
-                text += f'[{key}] {val} '
+                        # temp[self.dataset[idx][i][:left_parenthesis_index].split(' - ')[0]] = " ".join(self.dataset[idx][i][:left_parenthesis_index].split(' - ')[1:])
+                        temp = " ".join(self.dataset[idx][i][:left_parenthesis_index].split(' - ')[1:])
+                        text += f"[{self.dataset[idx][i][:left_parenthesis_index].split(' - ')[0]}] {temp} "
+            # for key, val in temp.items():
+            #     text += f'[{key}] {val} '
             text += "[END]"
         elif not self.tagging:
             text = f"{self.dataset[idx][2]}"
