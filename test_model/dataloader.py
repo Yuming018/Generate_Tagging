@@ -31,11 +31,11 @@ class Dataset:
 
     def create_input(self, idx, story_idx):
         context = self.text_segmentation(story_idx)
-        text = f"[SEP] {self.dataset[idx][0]} [SEP] {context}"
+        text = f"[Type] {self.dataset[idx][0]} [Context] {context}"
         return text
 
     def create_target(self, idx):
-        text = f"{self.dataset[idx][2]}"
+        text = self.dataset[idx][2]
         return text
     
     def text_segmentation(self, story_idx):

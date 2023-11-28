@@ -6,8 +6,8 @@ from peft import PeftConfig, PeftModel
 
 def inference(model, tokenizer, test_dataloader, device, path, path_save_model):
     config = PeftConfig.from_pretrained(path_save_model)
-    model = AutoModelForSeq2SeqLM.from_pretrained(config.base_model_name_or_path, device_map={"":0})
     tokenizer = AutoTokenizer.from_pretrained(config.base_model_name_or_path)
+    model = AutoModelForSeq2SeqLM.from_pretrained(config.base_model_name_or_path, device_map={"":0})
     model = PeftModel.from_pretrained(model, path_save_model, device_map={"":0})
 
     tagging_generation_config = GenerationConfig(

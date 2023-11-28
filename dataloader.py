@@ -143,7 +143,7 @@ class Datasets:
             #     text += f'[{key}] {val} '
             text += "[END]"
         elif not self.tagging:
-            text = f"{self.dataset[idx][2]}"
+            text = self.dataset[idx][2]
         encoded_sent = enconder(self.tokenizer, self.max_len, text = text)
         return encoded_sent.get('input_ids')
 

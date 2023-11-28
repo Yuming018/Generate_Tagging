@@ -7,7 +7,7 @@ import argparse
 import torch
 import csv
 from torch.utils.data import DataLoader
-from transformers import AutoTokenizer, Trainer, DataCollatorForSeq2Seq, Seq2SeqTrainingArguments
+from transformers import AutoTokenizer
 
 def main(batch_size = 4,
          epochs=10,
