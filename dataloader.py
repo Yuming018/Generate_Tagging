@@ -60,7 +60,7 @@ class Datasets:
         self.tokenizer = AutoTokenizer.from_pretrained(model_name)
         self.dataset = self.get_data(path)
         if self.path == 'data/test.csv' and not self.tagging:
-            self.model_tagging = self.get_data(path_save_model + 'tagging.csv')
+            self.model_tagging = self.get_data("/".join(path_save_model.split('/')[:-2]) + '/tagging/tagging.csv')
         self.input, self.mask, self.target = [], [], []
         self.datasets = []
         self.temp = defaultdict(Counter)
@@ -105,7 +105,8 @@ class Datasets:
                         elif self.tagging_type == 'Relation' and i == 8:
                             text += " [Event2] " + "".join(self.dataset[idx][i][:left_parenthesis_index])
                         elif self.tagging_type == 'Event':
-                            text += " [Arg] " + "".join(self.dataset[idx][i][:left_parenthesis_index])
+                            temp = " ".join(self.dataset[idx][i][:left_parenthesis_index].split(' - ')[1:])
+                            text += f"[{self.dataset[idx][i][:left_parenthesis_index].split(' - ')[0]}] {temp} "
                 text += " [END]"
         encoded_sent = enconder(self.tokenizer, self.max_len, text = text)
         return encoded_sent.get('input_ids'), encoded_sent.get('attention_mask')
@@ -136,11 +137,8 @@ class Datasets:
                     elif self.tagging_type == 'Event':
                         # text += " [Arg] " + "".join(self.dataset[idx][i][:left_parenthesis_index])
                         # self.temp[self.dataset[idx][self.index].split(' - ')[0]][self.dataset[idx][i][:left_parenthesis_index].split(' - ')[0]] = 1
-                        # temp[self.dataset[idx][i][:left_parenthesis_index].split(' - ')[0]] = " ".join(self.dataset[idx][i][:left_parenthesis_index].split(' - ')[1:])
                         temp = " ".join(self.dataset[idx][i][:left_parenthesis_index].split(' - ')[1:])
                         text += f"[{self.dataset[idx][i][:left_parenthesis_index].split(' - ')[0]}] {temp} "
-            # for key, val in temp.items():
-            #     text += f'[{key}] {val} '
             text += "[END]"
         elif not self.tagging:
             text = self.dataset[idx][2]
