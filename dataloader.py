@@ -93,7 +93,7 @@ class Datasets:
             text += '[END]'
         else:
             if self.path == 'data/test.csv':
-                text += f'[CLS] {self.model_tagging[self.count][2]}'
+                text += f'{self.model_tagging[self.count][2]}'
                 self.count += 1
             else:  
                 text += f"[{self.tagging_type}] {self.dataset[idx][self.index]}"

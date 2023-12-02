@@ -52,8 +52,8 @@ def save_csv(dataset, path):
             writer.writerow(data) 
 
 if __name__ == '__main__':
-    path = 'save_model/Event/tagging/'
-    data = read_data(path + 'tagging.csv')
+    path = 'save_model/Relation/question/'
+    data = read_data(path + 'question.csv')
 
     record, bleu_score = bleu_eval(data)
     record, s_score = SentenceTransformer_eval(record)
