@@ -9,7 +9,7 @@ class Dataset:
         self.max_len = 512
         self.tokenizer = AutoTokenizer.from_pretrained(model_name, do_lower_case=True)
         self.dataset = self.get_data(path)
-        self.context_type, self.context, self.target = [], [], []
+        self.context_type, self.context, self.focus_context, self.target = [], [], [] ,[]
         self.create_dataset()
 
     def get_data(self, path):
@@ -22,9 +22,10 @@ class Dataset:
         story_idx = []
         for idx in range(len(self.dataset)):
             if self.dataset[idx][4] != story_name:
-                context_type, context_ = self.create_input(idx-1, story_idx)
+                context_type, context, focus_context = self.create_input(idx-1, story_idx)
                 self.context_type.append(context_type)
-                self.context.append(context_)
+                self.context.append(context)
+                self.focus_context.append(focus_context)
                 self.target.append(self.create_target(idx-1))
                 story_name = self.dataset[idx][4]
                 story_idx = []
@@ -32,11 +33,10 @@ class Dataset:
         return
 
     def create_input(self, idx, story_idx):
-        # context = self.text_segmentation(story_idx)
+        focus_context = self.text_segmentation(story_idx)
         context_type, context = self.dataset[idx][0], self.dataset[idx][1]
         text = f"[Type] {self.dataset[idx][0]} [Context] {context}"
-        # return text
-        return context_type, context
+        return context_type, context, focus_context
 
     def create_target(self, idx):
         text = self.dataset[idx][2]
@@ -59,7 +59,7 @@ class Dataset:
         return len(self.target)
 
     def __getitem__(self, idx):
-        return self.context_type[idx], self.context[idx], self.target[idx]
+        return self.context_type[idx], self.context[idx], self.focus_context[idx], self.target[idx]
 
 if __name__ == '__main__':
     pass
