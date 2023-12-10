@@ -3,6 +3,7 @@ torch
 transformers
 gdown
 peft
+evaluate
 sentence_transformers
 
 # cuda

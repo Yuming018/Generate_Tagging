@@ -64,7 +64,8 @@ class Datasets:
         self.input, self.mask, self.target = [], [], []
         self.datasets = []
         self.temp = defaultdict(Counter)
-        self.create_dataset()
+        self.dic = Counter()
+        self.create_dataset()  
 
     def get_data(self, path):
         data = pd.read_csv(path)
@@ -76,6 +77,7 @@ class Datasets:
             dict = {}
             tag_type = self.dataset[idx][self.index].split(' - ')[0]
             if tag_type in Event or tag_type in Relation:
+                self.dic[self.dataset[idx][self.index].split(' - ')[1]] += 1
                 input_ids, attention_mask = self.create_input(idx)
                 target_ids = self.create_target(idx)
                 dict['input_ids'] = input_ids
