@@ -1,14 +1,17 @@
 import csv
+import os
 import torch
 from tqdm import tqdm
 from transformers import GenerationConfig, AutoModelForSeq2SeqLM, AutoTokenizer
 from peft import PeftConfig, PeftModel
 
-def inference(model, tokenizer, test_dataloader, device, path, path_save_model):
-    config = PeftConfig.from_pretrained(path_save_model)
+def inference(model, tokenizer, test_dataloader, device, save_file_path, path_save_model):
+    checkpoints_list = [int(f.split('-')[1]) for f in os.listdir(path_save_model + 'checkpoints')]
+    model_path = path_save_model + f'checkpoints/checkpoint-{max(checkpoints_list)}/'
+    config = PeftConfig.from_pretrained(model_path)
     tokenizer = AutoTokenizer.from_pretrained(config.base_model_name_or_path)
     model = AutoModelForSeq2SeqLM.from_pretrained(config.base_model_name_or_path, device_map={"":0})
-    model = PeftModel.from_pretrained(model, path_save_model, device_map={"":0})
+    model = PeftModel.from_pretrained(model, model_path, device_map={"":0})
 
     tagging_generation_config = GenerationConfig(
         num_beams=4,
@@ -45,7 +48,7 @@ def inference(model, tokenizer, test_dataloader, device, path, path_save_model):
     #     # print(output)
     #     target.append(target_)
     #     context.append(context_)
-    save_csv(prediction, target, context, path)
+    save_csv(prediction, target, context, save_file_path)
 
 def save_csv(prediction, target, context, path):
     row = ['ID', 'context', 'prediction', 'reference']

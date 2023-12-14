@@ -109,11 +109,13 @@ def training(model, tokenizer, train_data, valid_data, path_save_model, epochs, 
         fp16=False,
         logging_steps=50,
         evaluation_strategy="steps",
-        eval_steps=200,
+        eval_steps=50,
         save_strategy="steps",
-        save_steps=100, # 保存checkpoint的step数
-        save_total_limit=5, # 最多保存5个checkpoint
-        predict_with_generate=True,
+        save_steps=50, 
+        save_total_limit=3, 
+        load_best_model_at_end = True,
+        metric_for_best_model = 'eval_loss',
+        predict_with_generate = True,
         weight_decay=0.01,
         include_inputs_for_metrics=True,
         lr_scheduler_type="polynomial",
@@ -129,7 +131,7 @@ def training(model, tokenizer, train_data, valid_data, path_save_model, epochs, 
         tokenizer=tokenizer,
     )
     trainer.train()
-    model.save_pretrained(path_save_model)
+    # model.save_pretrained(path_save_model)
 
 if __name__ == '__main__':
     train_model()

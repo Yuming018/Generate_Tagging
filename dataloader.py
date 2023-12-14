@@ -13,6 +13,9 @@ Relation = ['Causal Effect',
             # 'Coreference'
             ]
 
+Event = ['State',
+         'Action']
+
 Relation_definition = {
     'X intent' : "Why does X cause the event?",
     'X reaction' : "How does X feel after the event?",
@@ -28,13 +31,10 @@ Relation_definition = {
     'isAfter' : "No causal relationship exists; Event1 occurs after Event2.",
 }
 Relation_definition_2 = {
-    'If-Event-Then-Mental-State' : "We define three relations relating to the mental pre- and post-conditions of an event. Contains X intent, X reaction and Other reaction.",
-    'If-Event-Then-Event' : "We also define five relations relating to events that constitute probable pre- and postconditions of a given event. Those relations describe events likely required to precede an event, as well as those likely to follow. Contains X need, Effect on X, X want, Other want, Effect on other, isBefore, the same and isAfter.",
-    'If-Event-Then-Persona' : "In addition to pre- and postconditions, we also define a stative relation that describes how the subject of an event is described or perceived.Contains X attribute.",
+    'If-Event-Then-Mental-State' : "Contains 'X intent', 'X reaction' and 'Other reaction'. Define three relations relating to the mental pre- and post-conditions of an event. ",
+    'If-Event-Then-Event' : "Contains 'X need', 'Effect on X', 'X want', 'Other want', 'Effect on other', 'isBefore', 'the same' and 'isAfter'. Define five relations relating to events that constitute probable pre- and postconditions of a given event. Those relations describe events likely required to precede an event, as well as those likely to follow.",
+    'If-Event-Then-Persona' : "Contains 'X attribute'. In addition to pre- and postconditions, Define a stative relation that describes how the subject of an event is described or perceived.",
 }
-
-Event = ['State',
-         'Action']
 
 class Datasets:
     def __init__(self, path, model_name, relation_tag, tagging, path_save_model) -> None:
@@ -83,7 +83,7 @@ class Datasets:
     def create_input(self, idx):
         context = self.text_segmentation(idx)
         text = "Please utilize the provided context, question types, and type definitions to generate key information for this context, along with corresponding types ."
-        text += '[Type definitions] '
+        # text += '[Type definitions] '
         for key, definition in Relation_definition_2.items():
             text += f'[{key}] {definition} '
         text += f"[Type] {self.dataset[idx][0]} [Context] {context} "
