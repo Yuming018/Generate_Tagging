@@ -6,7 +6,6 @@ import evaluate
 from tqdm import tqdm
 from collections import defaultdict
 from sklearn.metrics import precision_score, recall_score, f1_score, classification_report, confusion_matrix
-from seqeval.scheme import IOB2
 from sentence_transformers import SentenceTransformer, util
 
 metric = evaluate.load("bleu")
@@ -27,7 +26,7 @@ class eval_Realtion:
     def __init__(self, path) -> None:
         self.pred_dict, self.tar_dict = defaultdict(defaultdict), defaultdict(defaultdict)
         self.dataset = read_data(path)
-        self.label = [['isBefore', 'the same', 'isAfter'], ['X need', 'X intent', 'X want', 'X reaction', 'Effect on X', 'X attribute'], ['Other want', 'Other reaction', 'Effect on other']]
+        self.label = [['X attribute'], ['X intent', 'X reaction', 'Other reaction'], ['isBefore', 'the same', 'isAfter', 'X need', 'Effect on X',  'X want', 'Other want', 'Effect on other']]
         self.process_data()
 
     def process_data(self):

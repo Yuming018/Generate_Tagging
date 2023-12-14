@@ -13,36 +13,28 @@ Relation = ['Causal Effect',
             # 'Coreference'
             ]
 
+Relation_definition = {
+    'X intent' : "Why does X cause the event?",
+    'X reaction' : "How does X feel after the event?",
+    'Other reaction' : "How do others' feel after the event?",
+    'X attribute' : "How would X be described?",
+    'X need' : "What does X need to do before the event?",
+    'Effect on X' : "What effects does the event have on X?",
+    'X want' : "What would X likely want to do after the event?",
+    'Other want' : "What would others likely want to do after the event?",
+    'Effect on other' : "What effects does the event have on others?",
+    'isBefore' : "No causal relationship exists; Event1 occurs before Event2.",
+    'the same' : "No causal relationship exists; Event1 and Event2 occur simultaneously.",
+    'isAfter' : "No causal relationship exists; Event1 occurs after Event2.",
+}
+Relation_definition_2 = {
+    'If-Event-Then-Mental-State' : "We define three relations relating to the mental pre- and post-conditions of an event. Contains X intent, X reaction and Other reaction.",
+    'If-Event-Then-Event' : "We also define five relations relating to events that constitute probable pre- and postconditions of a given event. Those relations describe events likely required to precede an event, as well as those likely to follow. Contains X need, Effect on X, X want, Other want, Effect on other, isBefore, the same and isAfter.",
+    'If-Event-Then-Persona' : "In addition to pre- and postconditions, we also define a stative relation that describes how the subject of an event is described or perceived.Contains X attribute.",
+}
+
 Event = ['State',
          'Action']
-
-Event_arg = {'State':{
-                'Entity' : None,
-                'Trigger_Word' : None,
-                'Value' : None,
-                'Agent' : None,
-                'Emotion' : None,
-                'Time' : None,
-                'Key' : None,
-                'Topic' : None,
-                'Emotion_Type' : None,
-                'Place' : None,
-                'Trigger_word' : None,
-            },
-             'Action': {
-                'Actor' : None,
-                'Trigger_Word' : None,
-                'Direct Object' : None,
-                'Msg (Direct)' : None,
-                'Speaker' : None,
-                'Place' : None,
-                'Time' : None,
-                'Addressee' : None,
-                'Topic (Indirect)' : None,
-                'Indirect Object' : None,
-                'Tool or Method' : None,
-                'Trigger_word' : None,
-             }}
 
 class Datasets:
     def __init__(self, path, model_name, relation_tag, tagging, path_save_model) -> None:
@@ -90,7 +82,11 @@ class Datasets:
 
     def create_input(self, idx):
         context = self.text_segmentation(idx)
-        text = f"[Type] {self.dataset[idx][0]} [Context] {context} "
+        text = "Please utilize the provided context, question types, and type definitions to generate key information for this context, along with corresponding types ."
+        text += '[Type definitions] '
+        for key, definition in Relation_definition_2.items():
+            text += f'[{key}] {definition} '
+        text += f"[Type] {self.dataset[idx][0]} [Context] {context} "
         if self.tagging:
             text += '[END]'
         else:
