@@ -121,8 +121,11 @@ class eval_Event:
     def __init__(self, path) -> None:
         self.pred_dict, self.tar_dict = defaultdict(defaultdict), defaultdict(defaultdict)
         self.all_type_dict = dict()
+        self.repeat_label = { 'Trigger_Word' : 'Trigger_word',
+                       'Emotion' : 'Emotion_Type'}
         self.dataset = read_data(path)
         self.process_data()
+        print(self.all_type_dict)
 
     def process_data(self):
         type_idx = 0
@@ -132,15 +135,17 @@ class eval_Event:
             tar = tar.split('[')[1:-1]
             self.pred_dict[idx]['data'] = data
             for p in pred:
-                if p.split(']')[0] != 'Event' and p.split(']')[0] not in self.all_type_dict:
-                    self.all_type_dict[p.split(']')[0]] = type_idx
+                label = p.split(']')[0]
+                if label != 'Event' and label not in self.repeat_label and label not in self.all_type_dict:
+                    self.all_type_dict[label] = type_idx
                     type_idx += 1
-                self.pred_dict[idx][p.split(']')[0]] = p.split(']')[1]
+                self.pred_dict[idx][label] = p.split(']')[1]
             for t in tar:
-                if t.split(']')[0] != 'Event' and t.split(']')[0] not in self.all_type_dict:
-                    self.all_type_dict[t.split(']')[0]] = type_idx
+                label = t.split(']')[0]
+                if label != 'Event' and label not in self.repeat_label and label not in self.all_type_dict:
+                    self.all_type_dict[label] = type_idx
                     type_idx += 1
-                self.tar_dict[idx][t.split(']')[0]] = t.split(']')[1]
+                self.tar_dict[idx][label] = t.split(']')[1]
         self.all_type_dict['other'] = type_idx
 
     def NER_eval(self):
@@ -160,9 +165,14 @@ class eval_Event:
                                 bleu_score = result['precisions'][min(4, entity_len)-1]
                                 max_type = p_key
                     if bleu_score > 0.8:
+                        if max_type in self.repeat_label:
+                            max_type = self.repeat_label[max_type]
                         pred.append(self.all_type_dict[max_type])
                     else:
                         pred.append(self.all_type_dict['other'])
+                    
+                    if key in self.repeat_label:
+                            key = self.repeat_label[key]
                     true.append(self.all_type_dict[key])
         
         precision = precision_score(true, pred, average='micro')
