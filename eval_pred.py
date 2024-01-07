@@ -125,7 +125,7 @@ class eval_Event:
                        'Emotion' : 'Emotion_Type'}
         self.dataset = read_data(path)
         self.process_data()
-        print(self.all_type_dict)
+        # print(self.all_type_dict)
 
     def process_data(self):
         type_idx = 0
@@ -147,43 +147,137 @@ class eval_Event:
                     type_idx += 1
                 self.tar_dict[idx][label] = t.split(']')[1]
         self.all_type_dict['other'] = type_idx
-
+    
     def NER_eval(self):
-        pred, true = [], []
+        # get results classification
+        gold_arg_n, pred_arg_n, pred_in_gold_n, gold_in_pred_n = 0, 0, 0, 0
         keys_to_check = ['data', 'Event']
-        for key in tqdm(self.pred_dict):
-            predict = self.pred_dict[key]
-            tar = self.tar_dict[key]
+        for idx in tqdm(self.pred_dict):
+            predict = self.pred_dict[idx]
+            tar = self.tar_dict[idx]
+
+            for key, _ in tar.items():
+                if key not in keys_to_check:
+                    pred_arg_n += 1
+            
+            for key, _ in predict.items():
+                if key not in keys_to_check:
+                    gold_arg_n += 1
+            # print(pred_in_gold_n, gold_in_pred_n)
+
             for key, entity in tar.items():
                 if key not in keys_to_check:
                     bleu_score, max_type = 0, self.all_type_dict['other']
                     entity_len = len(entity.split())
+                    
                     for p_key, p_entity in predict.items():
                         if p_key not in keys_to_check:
                             result = metric.compute(predictions=[entity], references=[p_entity])
                             if result['precisions'][min(4, entity_len)-1] > bleu_score:
                                 bleu_score = result['precisions'][min(4, entity_len)-1]
                                 max_type = p_key
+                    
                     if bleu_score > 0.8:
                         if max_type in self.repeat_label:
                             max_type = self.repeat_label[max_type]
-                        pred.append(self.all_type_dict[max_type])
-                    else:
-                        pred.append(self.all_type_dict['other'])
-                    
-                    if key in self.repeat_label:
+                        if key in self.repeat_label:
                             key = self.repeat_label[key]
-                    true.append(self.all_type_dict[key])
-        
-        precision = precision_score(true, pred, average='micro')
-        recall = recall_score(true, pred, average='micro')
-        f1_s = f1_score(true, pred, average='micro')
-        print(f'Micro-average Precision: {precision}')
-        print(f'Micro-average Recall: {recall}')
-        print(f'Micro-average F1_score: {f1_s}')
-        print(classification_report(true, pred))
-        # print(confusion_matrix(true, pred))
+                        if max_type == key:
+                            gold_in_pred_n += 1
+            
+            for key, entity in predict.items():
+                if key not in keys_to_check:
+                    bleu_score, max_type = 0, self.all_type_dict['other']
+                    entity_len = len(entity.split())
+                    
+                    for t_key, t_entity in tar.items():
+                        if t_key not in keys_to_check:
+                            result = metric.compute(predictions=[entity], references=[t_entity])
+                            if result['precisions'][min(4, entity_len)-1] > bleu_score:
+                                bleu_score = result['precisions'][min(4, entity_len)-1]
+                                max_type = t_key
+                    
+                    if bleu_score > 0.8:
+                        if max_type in self.repeat_label:
+                            max_type = self.repeat_label[max_type]
+                        if key in self.repeat_label:
+                            key = self.repeat_label[key]
+                        if max_type == key:
+                            pred_in_gold_n += 1
 
+        if pred_arg_n != 0:
+            prec_c = 100.0 * pred_in_gold_n / pred_arg_n
+        else:
+            prec_c = 0
+        if gold_arg_n != 0:
+            recall_c = 100.0 * gold_in_pred_n / gold_arg_n
+        else:
+            recall_c = 0
+        if prec_c or recall_c:
+            f1_c = 2 * prec_c * recall_c / (prec_c + recall_c)
+        else:
+            f1_c = 0
+        
+        # get results identification
+        gold_arg_n, pred_arg_n, pred_in_gold_n, gold_in_pred_n = 0, 0, 0, 0
+        keys_to_check = ['data', 'Event']
+        for idx in tqdm(self.pred_dict):
+            predict = self.pred_dict[idx]
+            tar = self.tar_dict[idx]
+
+            for key, _ in tar.items():
+                if key not in keys_to_check:
+                    pred_arg_n += 1
+            
+            for key, _ in predict.items():
+                if key not in keys_to_check:
+                    gold_arg_n += 1
+
+            for key, entity in tar.items():
+                if key not in keys_to_check:
+                    bleu_score = 0
+                    entity_len = len(entity.split())
+                    
+                    for p_key, p_entity in predict.items():
+                        if p_key not in keys_to_check:
+                            result = metric.compute(predictions=[entity], references=[p_entity])
+                            if result['precisions'][min(4, entity_len)-1] > bleu_score:
+                                bleu_score = result['precisions'][min(4, entity_len)-1]
+                    
+                    if bleu_score > 0.8:
+                        gold_in_pred_n += 1
+            
+            for key, entity in predict.items():
+                if key not in keys_to_check:
+                    bleu_score = 0
+                    entity_len = len(entity.split())
+                    
+                    for t_key, t_entity in tar.items():
+                        if t_key not in keys_to_check:
+                            result = metric.compute(predictions=[entity], references=[t_entity])
+                            if result['precisions'][min(4, entity_len)-1] > bleu_score:
+                                bleu_score = result['precisions'][min(4, entity_len)-1]
+                    
+                    if bleu_score > 0.8:
+                        pred_in_gold_n += 1
+
+        if pred_arg_n != 0:
+            prec_i = 100.0 * pred_in_gold_n / pred_arg_n
+        else:
+            prec_i = 0
+        if gold_arg_n != 0:
+            recall_i = 100.0 * gold_in_pred_n / gold_arg_n
+        else:
+            recall_i = 0
+        if prec_i or recall_i:
+            f1_i = 2 * prec_i * recall_i / (prec_i + recall_i)
+        else:
+            f1_i = 0
+        
+        print('f1_c : ', f1_c)
+        print('f1_i : ', f1_i)
+        # input()
+                
     def SentenceTransformer_eval(self):
         record = []
         score = 0
@@ -200,8 +294,14 @@ class eval_Event:
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--Type', '-t', type=str, default='Relation')
-    parser.add_argument('--Generation', '-g', type=str, default='tagging')
+    parser.add_argument('--Type', '-t',
+                        choices=["Relation", "Event"],
+                        type=str,
+                        default='Relation')
+    parser.add_argument('--Generation', '-g',
+                        choices=["tagging", "question"],
+                        type=str,
+                        default='tagging')
     args = parser.parse_args()
     
     print('Type : ', args.Type)
