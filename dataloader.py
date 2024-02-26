@@ -37,21 +37,20 @@ Relation_definition_2 = {
 }
 
 class Datasets:
-    def __init__(self, path, model_name, relation_tag, tagging, path_save_model) -> None:
+    def __init__(self, path, model_name, event_or_relation, tag_or_question, path_save_model) -> None:
         self.path = path
-        self.tagging = tagging
+        self.tagging = tag_or_question
         self.max_len = 256
         self.count = 0
-        if not relation_tag:
+        self.tagging_type = event_or_relation
+        if event_or_relation == 'Event':
             self.index = 5 #index
-            self.tagging_type = 'Event'
-        elif relation_tag:
+        elif event_or_relation == 'relation':
             self.index = 6 #index
-            self.tagging_type = 'Relation'
     
         self.tokenizer = AutoTokenizer.from_pretrained(model_name)
         self.dataset = self.get_data(path)
-        if self.path == 'data/test.csv' and not self.tagging:
+        if self.path == 'data/test.csv' and self.tagging == 'question':
             self.model_tagging = self.get_data("/".join(path_save_model.split('/')[:-2]) + '/tagging/tagging.csv')
         self.input, self.mask, self.target = [], [], []
         self.datasets = []
@@ -87,9 +86,9 @@ class Datasets:
         for key, definition in Relation_definition_2.items():
             text += f'[{key}] {definition} '
         text += f"[Type] {self.dataset[idx][0]} [Context] {context} "
-        if self.tagging:
+        if self.tagging == 'tagging':
             text += '[END]'
-        else:
+        elif self.tagging == 'question':
             if self.path == 'data/test.csv':
                 text += f'{self.model_tagging[self.count][2]}'
                 self.count += 1
@@ -123,7 +122,7 @@ class Datasets:
 
     def create_target(self, idx):
         # temp = deepcopy(Event_arg[self.dataset[idx][self.index].split(' - ')[0]])
-        if self.tagging:
+        if self.tagging == 'tagging':
             text = f"[{self.tagging_type}] {self.dataset[idx][self.index]} "
             for i in range(7, len(self.dataset[idx])):
                 if self.dataset[idx][i] != '':
@@ -138,7 +137,7 @@ class Datasets:
                         temp = " ".join(self.dataset[idx][i][:left_parenthesis_index].split(' - ')[1:])
                         text += f"[{self.dataset[idx][i][:left_parenthesis_index].split(' - ')[0]}] {temp} "
             text += "[END]"
-        elif not self.tagging:
+        elif self.tagging == 'question':
             text = self.dataset[idx][2]
         encoded_sent = enconder(self.tokenizer, self.max_len, text = text)
         return encoded_sent.get('input_ids')

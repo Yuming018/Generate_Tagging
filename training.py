@@ -90,7 +90,7 @@ def evaluate(model, val_dataloader, device):
         
     return np.mean(val_loss)
 
-def training(model, tokenizer, train_data, valid_data, path_save_model, epochs, batch_size, tagging):
+def training(model, tokenizer, train_data, valid_data, path_save_model, epochs, batch_size):
     collate_fn = DataCollatorForSeq2Seq(
         tokenizer,
         model=model,
