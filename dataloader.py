@@ -45,7 +45,7 @@ class Datasets:
         self.tagging_type = event_or_relation
         if event_or_relation == 'Event':
             self.index = 5 #index
-        elif event_or_relation == 'relation':
+        elif event_or_relation == 'Relation':
             self.index = 6 #index
     
         self.tokenizer = AutoTokenizer.from_pretrained(model_name)
