@@ -25,9 +25,9 @@ def enconder(tokenizer, max_len=256, text = ''):
     encoded_sent = tokenizer.encode_plus(
         text = text,  
         add_special_tokens=True,
-        truncation=True,  
-        padding = 'longest' if max_len < 512 else 'max_length',   
-        max_length = max_len,        
+        truncation=False,  
+        padding = 'longest',   
+        # max_length = max_len,        
         #return_tensors='pt',           
         return_attention_mask=True      
         )

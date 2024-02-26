@@ -1,7 +1,7 @@
 pandas
 torch
 transformers
-gdown
+gdown==4.6.1
 peft
 evaluate
 sentence_transformers
