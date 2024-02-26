@@ -11,7 +11,7 @@ pip install -r requirements.txt
 cd Generate_Tagging
 mkdir data
 cd data
-gdown 1TA9HlHWl3874uOIS7HIQ5E4C-L2Pe8il
+gdown 1QfS3eWwolZAZOMz9oJMLsPwrfu3PbCAh
 unzip data.zip
 ```
 
@@ -34,6 +34,10 @@ python main.py -e 訓練幾次 -b 批次數 -p 子圖片的大小 -tm 是否為�
 |--- main.py
 |--- model.py
 |--- training.py
+|
+|--- test_model
+|   |--- main.csv
+|   |--- knowledge_graph.csv
 |
 |--- requirements.txt
 |--- README.md

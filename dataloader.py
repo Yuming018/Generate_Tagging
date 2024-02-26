@@ -37,9 +37,9 @@ Relation_definition_2 = {
 }
 
 class Datasets:
-    def __init__(self, path, model_name, event_or_relation, tag_or_question, path_save_model) -> None:
+    def __init__(self, path, model_name, event_or_relation, Generation, path_save_model) -> None:
         self.path = path
-        self.tagging = tag_or_question
+        self.tagging = Generation
         self.max_len = 256
         self.count = 0
         self.tagging_type = event_or_relation
