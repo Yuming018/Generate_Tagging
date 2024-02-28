@@ -33,5 +33,10 @@ def enconder(tokenizer, max_len=256, text = ''):
         )
     return encoded_sent
 
+def check_checkpoint(path_save_model):
+    checkpoints_list = [int(f.split('-')[1]) for f in os.listdir(path_save_model + 'checkpoints')]
+    model_path = path_save_model + f'checkpoints/checkpoint-{max(checkpoints_list)}/'
+    return model_path
+
 if __name__ == '__main__':
     pass

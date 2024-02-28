@@ -4,10 +4,10 @@ import torch
 from tqdm import tqdm
 from transformers import GenerationConfig, AutoModelForSeq2SeqLM, AutoTokenizer
 from peft import PeftConfig, PeftModel
+from helper import check_checkpoint
 
 def inference(model, tokenizer, test_dataloader, device, save_file_path, path_save_model):
-    checkpoints_list = [int(f.split('-')[1]) for f in os.listdir(path_save_model + 'checkpoints')]
-    model_path = path_save_model + f'checkpoints/checkpoint-{max(checkpoints_list)}/'
+    model_path = check_checkpoint(path_save_model)
     config = PeftConfig.from_pretrained(model_path)
     tokenizer = AutoTokenizer.from_pretrained(config.base_model_name_or_path)
     model = AutoModelForSeq2SeqLM.from_pretrained(config.base_model_name_or_path, device_map={"":0})

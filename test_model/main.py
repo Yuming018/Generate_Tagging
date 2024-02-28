@@ -10,6 +10,9 @@ import argparse
 import torch
 import csv
 
+from transformers import logging
+logging.set_verbosity_error()
+
 question_type = ['action', 'outcome resolution', 'causal relationship',
                  'prediction', 'setting', 'feeling', 'character']
 
@@ -24,7 +27,7 @@ def save_csv(context, predict, reference, score, path):
 
 def main(path_save_model = '../save_model/Event/tagging/',
         device = 'cpu',
-        relation_tag = False,
+        event_or_relation = 'Event',
 ):
     model_name = "bigscience/mt0-large"
     tokenizer = AutoTokenizer.from_pretrained(model_name)
@@ -36,7 +39,7 @@ def main(path_save_model = '../save_model/Event/tagging/',
     context_, predict, reference, score_ = [], [], [], []
     i = 0
     for context_type, context, focus_context, target in tqdm(dataset):
-        if i == 1:
+        if i == 2:
             question, score = create_knowledge_graph(context_type, context, focus_context, target, tokenizer, model, device)
             
             context_.append(focus_context)

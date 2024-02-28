@@ -19,6 +19,9 @@ def main(batch_size = 4,
    
     model_name = "bigscience/mt0-large"
     
+    print('Tagging : ', event_or_relation)
+    print('Generation : ', Generation)
+
     path_save_model = checkdir(path_save_model, event_or_relation, Generation)
     if Generation == 'tagging' :
         file_name = path_save_model + 'tagging.csv'
@@ -44,8 +47,8 @@ if __name__ == '__main__':
     parser.add_argument('--epoch', '-e', type=int, default=5)
     parser.add_argument('--batch_size', '-b', type=int, default=2)
     parser.add_argument('--test_mode', '-tm', type=bool, default=False)
-    parser.add_argument('--event_or_relation', '-r', type=str, choices=['Event', 'Relation'], default='Event')
-    parser.add_argument('--Generation', '-t', type=str, choices=['tagging', 'question'], default='tagging')
+    parser.add_argument('--event_or_relation', '-t', type=str, choices=['Event', 'Relation'], default='Event')
+    parser.add_argument('--Generation', '-g', type=str, choices=['tagging', 'question'], default='tagging')
     args = parser.parse_args()
     
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
