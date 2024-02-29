@@ -39,9 +39,8 @@ def main(path_save_model = '../save_model/Event/tagging/',
     context_, predict, reference, score_ = [], [], [], []
     i = 0
     for context_type, context, focus_context, target in tqdm(dataset):
-        if i == 2:
+        if i == 0:
             question, score = create_knowledge_graph(context_type, context, focus_context, target, tokenizer, model, device)
-            
             context_.append(focus_context)
             predict.append(question)
             reference.append(target)

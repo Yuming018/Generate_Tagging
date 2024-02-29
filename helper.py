@@ -1,4 +1,5 @@
 import os
+import re
 
 def checkdir(path_save_model, event_or_relation, Generation):
     
@@ -21,13 +22,25 @@ def checkdir(path_save_model, event_or_relation, Generation):
 
     return path_save_model
 
+def text_segmentation(data):
+        min_b, max_b = float('inf'), float('-inf')
+        for i in range(7, len(data)):
+            if data[i] != '':
+                numbers = re.findall(r'\d+', data[i])
+                min_b = min(min_b, int(numbers[-2]))
+                max_b = max(max_b, int(numbers[-1]))
+        words = re.findall(r'\S+|[\s]+', data[1])
+        if words[min_b] == ' ':
+            min_b -= 1
+        return "".join(words[min_b:max_b])
+
 def enconder(tokenizer, max_len=256, text = ''):
     encoded_sent = tokenizer.encode_plus(
         text = text,  
         add_special_tokens=True,
-        truncation=False,  
+        truncation=True,  
         padding = 'longest',   
-        # max_length = max_len,        
+        max_length = max_len,        
         #return_tensors='pt',           
         return_attention_mask=True      
         )

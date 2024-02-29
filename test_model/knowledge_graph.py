@@ -1,6 +1,6 @@
 import sys 
 sys.path.append("..") 
-from helper import enconder
+from helper import enconder, text_segmentation
 
 from tqdm import tqdm
 from collections import defaultdict
@@ -20,16 +20,19 @@ def create_knowledge_graph(context_type, context, core_context, target, tokenize
     並以 core_context 生成出 Knowledge graph ，命名為 core_graph
     重點段落 : 依據此段落便可以回答 Fairytale QA 的問題，主要為標記人員所標記的範圍
     """
-    text = f'[Type] {context_type} [Context] {core_context} [END]'
+    text = "Please utilize the provided context, question types, and type definitions to generate key information for this context, along with corresponding types ."
+    for key, definition in Relation_definition_2.items():
+        text += f'[{key}] {definition} ' 
+    text += f'[Type] {context_type} [Context] {core_context} [END]'
     
-    input_ids, event_tagging_ids, event_tagging = generate_tagging('../save_model/Event/tagging/', text, tokenizer, model, device)
-    Event_tagging_id = torch.cat((input_ids, event_tagging_ids), dim=0)
-    event_question, e_score = generate_question('../save_model/Event/question/', Event_tagging_id, target, tokenizer, model)
+    event_tagging = generate_tagging('../save_model/Event/tagging/', text, tokenizer, model, device)
+    Event_text = text[:-5] + event_tagging
+    event_question, e_score = generate_question('../save_model/Event/question/', Event_text, target, tokenizer, model, device)
     
-    input_ids, relation_tagging_ids, relation_tagging = generate_tagging('../save_model/Relation/tagging/', text, tokenizer, model, device)
-    Relation_tagging_id = torch.cat((input_ids, relation_tagging_ids), dim=0)
-    relation_question, r_score = generate_question('../save_model/Relation/question/', Relation_tagging_id, target, tokenizer, model)
-    
+    relation_tagging = generate_tagging('../save_model/Relation/tagging/', text, tokenizer, model, device)
+    Relation_text = text[:-5] + relation_tagging
+    relation_question, r_score = generate_question('../save_model/Relation/question/', Relation_text, target, tokenizer, model, device)
+
     if e_score >= r_score:
         tagging = event_tagging
         # question = event_question
@@ -56,21 +59,21 @@ def create_knowledge_graph(context_type, context, core_context, target, tokenize
 
     new_lines = before_lines[:-1] + [core_context] + after_lines[1:]
     Event_graph = defaultdict(defaultdict)
-    print('Event')
-    for idx, line in enumerate(new_lines):
-        if line == core_context:
-            continue
-        if line != '':
-            text = "Please utilize the provided context, question types, and type definitions to generate key information for this context, along with corresponding types ."
-            for key, definition in Relation_definition_2.items():
-                text += f'[{key}] {definition} ' 
-            text += f'[Type] {context_type} [Context] {line} [END]'
-            _, _, tagging = generate_tagging('../save_model/Event/tagging/', text, tokenizer, model, device)
+    # print('Event')
+    # for idx, line in enumerate(new_lines):
+    #     if line == core_context:
+    #         continue
+    #     if line != '':
+    #         text = "Please utilize the provided context, question types, and type definitions to generate key information for this context, along with corresponding types ."
+            # for key, definition in Relation_definition_2.items():
+            #     text += f'[{key}] {definition} ' 
+    #         text += f'[Type] {context_type} [Context] {line} [END]'
+    #         tagging = generate_tagging('../save_model/Event/tagging/', text, tokenizer, model, device)
             
-            Event_graph[idx]['text'] = line
-            for tag in tagging.split('[')[1:-1]:
-                key, entity = tag.split(']')
-                Event_graph[idx][key] = entity
+    #         Event_graph[idx]['text'] = line
+    #         for tag in tagging.split('[')[1:-1]:
+    #             key, entity = tag.split(']')
+    #             Event_graph[idx][key] = entity
     
     # for idx in Event_graph:
     #     print(idx)
@@ -92,24 +95,24 @@ def create_knowledge_graph(context_type, context, core_context, target, tokenize
             text = "Please utilize the provided context, question types, and type definitions to generate key information for this context, along with corresponding types ."
             for key, definition in Relation_definition_2.items():
                 text += f'[{key}] {definition} ' 
-            text += f'[Type] {context_type} [Context] {context} [END]'
-            _, _, tagging = generate_tagging('../save_model/Relation/tagging/', text, tokenizer, model, device)
+            text += f'[Type] {context_type} [Context] {context}  [END]'
+            tagging = generate_tagging('../save_model/Relation/tagging/', text, tokenizer, model, device)
             
             Relation_graph[idx]['text'] = context
             for tag in tagging.split('[')[1:-1]:
                 key, entity = tag.split(']')
                 Relation_graph[idx][key] = entity
     
-    # for idx in Relation_graph:
-    #     print(idx)
-    #     for key in Relation_graph[idx]:
-    #         print(key, ":", Relation_graph[idx][key])
-    # input()
+    for idx in Relation_graph:
+        print(idx)
+        for key in Relation_graph[idx]:
+            print(key, ":", Relation_graph[idx][key])
+    input()
 
     input_ids, match = connect_knowledge_graph(context, core_graph, Event_graph, Relation_graph, tokenizer, device)
     if match:
-        event_question, e_score = generate_question('../save_model/Event/question/', input_ids, target, tokenizer, model)
-        relation_question, r_score = generate_question('../save_model/Relation/question/', input_ids, target, tokenizer, model)
+        event_question, e_score = generate_question('../save_model/Event/question/', input_ids, target, tokenizer, model, device)
+        relation_question, r_score = generate_question('../save_model/Relation/question/', input_ids, target, tokenizer, model, device)
         
     # input()
     return "", 0
@@ -127,18 +130,21 @@ def generate_tagging(path_save_model, text, tokenizer, model, device):
     tagging_ids = create_tagging(path_save_model = path_save_model, model = model, input_ids = input_ids)
     tagging = tokenizer.decode(tagging_ids, skip_special_tokens=True)
     
-    # print('\nText: ', text)
-    # if 'Event' in path_save_model:
-    #     print('Event_tagging: ', tagging)
-    # elif 'Relation' in path_save_model:
-    #     print('Relation_tagging: ', tagging)
-    return input_ids, tagging_ids, tagging
+    print('\nText: ', text)
+    if 'Event' in path_save_model:
+        print('Event_tagging: ', tagging)
+    elif 'Relation' in path_save_model:
+        print('Relation_tagging: ', tagging)
+    return tagging
 
-def generate_question(path_save_model, input_ids, target, tokenizer, model):
+def generate_question(path_save_model, text, target, tokenizer, model, device):
     """
     Input : Event Knowledge graph
     Output : 生成出來的問題，以及跟 Fairytale QA target 計算過相似性的分數
     """
+    input_ids = enconder(tokenizer, text=text)
+    input_ids = torch.tensor(input_ids.get('input_ids')).to(device)
+
     question_ids = create_question(path_save_model = path_save_model, model = model, input_ids = input_ids)
     question = tokenizer.decode(question_ids, skip_special_tokens=True)
     score = eval(question, target)
@@ -184,6 +190,9 @@ def eval(pred, tar):
     Input : 預測出來的問題，以及 Fairytale QA 的原始問題
     Output : 返回兩者的相似性分數
     """
+    print(pred)
+    print(tar)
+    input()
     model = SentenceTransformer('multi-qa-MiniLM-L6-cos-v1')
     query_embedding = model.encode(pred)
     passage_embedding = model.encode(tar)

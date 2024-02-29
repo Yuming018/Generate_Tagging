@@ -6,15 +6,15 @@ import torch
 from transformers import AutoTokenizer
 from copy import deepcopy
 from collections import defaultdict, Counter
-from helper import enconder
+from helper import enconder, text_segmentation
 
-Relation = ['Causal Effect',
+legal_tagging = ['Causal Effect',
             'Temporal',
             # 'Coreference'
-            ]
 
-Event = ['State',
-         'Action']
+            'State',
+            'Action'
+]
 
 Relation_definition = {
     'X intent' : "Why does X cause the event?",
@@ -40,7 +40,7 @@ class Datasets:
     def __init__(self, path, model_name, event_or_relation, Generation, path_save_model) -> None:
         self.path = path
         self.Generation = Generation
-        self.max_len = 256
+        self.max_len = 512
         self.count = 0
         self.tagging_type = event_or_relation
         if event_or_relation == 'Event':
@@ -64,13 +64,16 @@ class Datasets:
         return data.values
 
     def create_dataset(self):
+        story_name = "-".join(self.dataset[0][4].split('-')[:-1])
+        story_list = []
         for idx in tqdm(range(len(self.dataset))):
             dict = {}
             tag_type = self.dataset[idx][self.index].split(' - ')[0]
-            if tag_type in Event or tag_type in Relation:
+            current_story_name = "-".join(self.dataset[idx][4].split('-')[:-1])
+            if current_story_name != story_name and tag_type in legal_tagging:
                 self.dic[self.dataset[idx][self.index].split(' - ')[1]] += 1
-                input_ids, attention_mask = self.create_input(idx)
-                target_ids = self.create_target(idx)
+                input_ids, attention_mask = self.create_input(idx, story_list)
+                target_ids = self.create_target(story_list)
                 dict['input_ids'] = input_ids
                 dict['attention_mask'] = attention_mask
                 dict['labels'] = target_ids
@@ -79,16 +82,20 @@ class Datasets:
                 self.target.append(target_ids)
                 self.datasets.append(dict)
 
-    def create_input(self, idx):
-        if self.tagging_type == 'Event':
-            context = self.text_segmentation(idx)
-        elif self.tagging_type == 'Relation':
-            context = self.dataset[idx][1]
-        text = "Please utilize the provided context, question types, and type definitions to generate key information for this context, along with corresponding types ."
-        # text += '[Type definitions] '
-        for key, definition in Relation_definition_2.items():
-            text += f'[{key}] {definition} '
-        text += f"[Type] {self.dataset[idx][0]} [Context] {context} "
+                story_name = current_story_name
+                story_list = []
+            if tag_type in legal_tagging:
+                story_list.append(idx)
+        return          
+
+    def create_input(self, idx, story_list):
+        # context = text_segmentation(self.dataset[idx])
+        context = self.dataset[story_list[0]][1]
+        text = f"Please utilize the provided context to generate {len(story_list)} {self.tagging_type} key information for this context, along with corresponding types ."
+        # for key, definition in Relation_definition_2.items():
+        #     text += f'[{key}] {definition} '
+        # text += f"[Type] {self.dataset[idx][0]} [Context] {context} "
+        text += f"[Context] {context} "
         
         if self.Generation == 'tagging':
             text += '[END]'
@@ -109,41 +116,52 @@ class Datasets:
                             temp = " ".join(self.dataset[idx][i][:left_parenthesis_index].split(' - ')[1:])
                             text += f"[{self.dataset[idx][i][:left_parenthesis_index].split(' - ')[0]}] {temp} "
                 text += " [END]"
+
         encoded_sent = enconder(self.tokenizer, self.max_len, text = text)
+        # print(encoded_sent.get('input_ids'))
+        # print(self.tokenizer.decode(encoded_sent.get('input_ids'), skip_special_tokens=True))        
         return encoded_sent.get('input_ids'), encoded_sent.get('attention_mask')
 
-    def text_segmentation(self, idx):
-        min_b, max_b = float('inf'), float('-inf')
-        for i in range(7, len(self.dataset[idx])):
-            if self.dataset[idx][i] != '':
-                numbers = re.findall(r'\d+', self.dataset[idx][i])
-                min_b = min(min_b, int(numbers[-2]))
-                max_b = max(max_b, int(numbers[-1]))
-        words = re.findall(r'\S+|[\s]+', self.dataset[idx][1])
-        if words[min_b] == ' ':
-            min_b -= 1
-        return "".join(words[min_b:max_b])
-
-    def create_target(self, idx):
+    def create_target(self, story_list):
+        """
+        Tagging : 
+            input : story list
+            output : 所有 list 中 tagging 的集合
+            
+            output format : 
+            [Relation 1] Causal Effect - X intent 
+            [Event1] " who are these two? " asked the snow man of the yard - dog 
+            [Event2] you have been here longer than i have
+            [Relation 2] Causal Effect - X intent 
+            [Event1] i never bite those two 
+            [Event2] she has stroked my back many times 
+            [END]
+        """
         # temp = deepcopy(Event_arg[self.dataset[idx][self.index].split(' - ')[0]])
         if self.Generation == 'tagging':
-            text = f"[{self.tagging_type}] {self.dataset[idx][self.index]} "
-            for i in range(7, len(self.dataset[idx])):
-                if self.dataset[idx][i] != '':
-                    left_parenthesis_index = self.dataset[idx][i].rfind('(')
-                    if self.tagging_type == 'Relation' and i == 7:
-                            text += " [Event1] " + "".join(self.dataset[idx][i][:left_parenthesis_index])
-                    elif self.tagging_type == 'Relation' and i == 8:
-                        text += " [Event2] " + "".join(self.dataset[idx][i][:left_parenthesis_index])
-                    elif self.tagging_type == 'Event':
-                        # text += " [Arg] " + "".join(self.dataset[idx][i][:left_parenthesis_index])
-                        # self.temp[self.dataset[idx][self.index].split(' - ')[0]][self.dataset[idx][i][:left_parenthesis_index].split(' - ')[0]] = 1
-                        temp = " ".join(self.dataset[idx][i][:left_parenthesis_index].split(' - ')[1:])
-                        text += f"[{self.dataset[idx][i][:left_parenthesis_index].split(' - ')[0]}] {temp} "
-            text += "[END]"
+            text = ""
+            for idx, story_idx in enumerate(story_list):
+                text += f"[{self.tagging_type} {idx+1}] {self.dataset[story_idx][self.index]} "
+                for i in range(7, len(self.dataset[story_idx])):
+                    if self.dataset[story_idx][i] != '':
+                        left_parenthesis_index = self.dataset[story_idx][i].rfind('(')
+                        if self.tagging_type == 'Relation' and i == 7:
+                                text += " [Event1] " + "".join(self.dataset[story_idx][i][:left_parenthesis_index])
+                        elif self.tagging_type == 'Relation' and i == 8:
+                            text += " [Event2] " + "".join(self.dataset[story_idx][i][:left_parenthesis_index])
+                        elif self.tagging_type == 'Event':
+                            # text += " [Arg] " + "".join(self.dataset[story_idx][i][:left_parenthesis_index])
+                            # self.temp[self.dataset[story_idx][self.index].split(' - ')[0]][self.dataset[story_idx][i][:left_parenthesis_index].split(' - ')[0]] = 1
+                            temp = " ".join(self.dataset[story_idx][i][:left_parenthesis_index].split(' - ')[1:])
+                            text += f"[{self.dataset[story_idx][i][:left_parenthesis_index].split(' - ')[0]}] {temp} "
+            text += " [END]"
         elif self.Generation == 'question':
             text = self.dataset[idx][2]
+        
         encoded_sent = enconder(self.tokenizer, self.max_len, text = text)
+        # print(encoded_sent.get('input_ids'))
+        # print(self.tokenizer.decode(encoded_sent.get('input_ids'), skip_special_tokens=True))
+        # input()
         return encoded_sent.get('input_ids')
 
     def __len__(self):
