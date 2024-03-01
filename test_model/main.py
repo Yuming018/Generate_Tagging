@@ -25,10 +25,7 @@ def save_csv(context, predict, reference, score, path):
         for i in range(len(context)):
             writer.writerow([i, context[i], predict[i], reference[i], score[i]])
 
-def main(path_save_model = '../save_model/Event/tagging/',
-        device = 'cpu',
-        event_or_relation = 'Event',
-):
+def main(device = 'cpu'):
     model_name = "bigscience/mt0-large"
     tokenizer = AutoTokenizer.from_pretrained(model_name)
     model = create_model(model_name).to(device)

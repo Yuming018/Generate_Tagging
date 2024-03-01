@@ -14,6 +14,7 @@ def inference(model, tokenizer, test_dataloader, device, save_file_path, path_sa
     model = PeftModel.from_pretrained(model, model_path, device_map={"":0})
 
     tagging_generation_config = GenerationConfig(
+        max_length=100,
         num_beams=4,
         early_stopping=True,
         decoder_start_token_id=0,
@@ -23,7 +24,7 @@ def inference(model, tokenizer, test_dataloader, device, save_file_path, path_sa
         no_repeat_ngram_size=3,
         top_k=4, 
         temperature=0.5,
-        max_new_tokens=128,
+        max_new_tokens=512,
     )
 
     prediction, target, context = [], [], []

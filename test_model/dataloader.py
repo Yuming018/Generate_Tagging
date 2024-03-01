@@ -35,7 +35,6 @@ class Dataset:
     def create_input(self, idx, story_idx):
         focus_context = self.text_segmentation(story_idx)
         context_type, context = self.dataset[idx][0], self.dataset[idx][1]
-        text = f"[Type] {self.dataset[idx][0]} [Context] {context}"
         return context_type, context, focus_context
 
     def create_target(self, idx):

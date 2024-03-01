@@ -70,7 +70,7 @@ class Datasets:
             dict = {}
             tag_type = self.dataset[idx][self.index].split(' - ')[0]
             current_story_name = "-".join(self.dataset[idx][4].split('-')[:-1])
-            if current_story_name != story_name and tag_type in legal_tagging:
+            if current_story_name != story_name and story_list and tag_type in legal_tagging:
                 self.dic[self.dataset[idx][self.index].split(' - ')[1]] += 1
                 input_ids, attention_mask = self.create_input(idx, story_list)
                 target_ids = self.create_target(story_list)
@@ -91,17 +91,18 @@ class Datasets:
     def create_input(self, idx, story_list):
         # context = text_segmentation(self.dataset[idx])
         context = self.dataset[story_list[0]][1]
-        text = f"Please utilize the provided context to generate {len(story_list)} {self.tagging_type} key information for this context, along with corresponding types ."
         # for key, definition in Relation_definition_2.items():
         #     text += f'[{key}] {definition} '
         # text += f"[Type] {self.dataset[idx][0]} [Context] {context} "
-        text += f"[Context] {context} "
         
         if self.Generation == 'tagging':
-            text += '[END]'
+            text = f"Please utilize the provided context to generate {len(story_list)} {self.tagging_type} key information for this context "
+            text += f'[Context] {context} [END]'
         elif self.Generation == 'question':
+            text = f"Please utilize the provided context and {self.tagging_type} key information to generate question for this context "
+            text += f'[Context] {context} '
             if self.path == 'data/test.csv':
-                text += f'{self.model_tagging[self.count][2]}'
+                text += self.model_tagging[self.count][2]
                 self.count += 1
             else:  
                 text += f"[{self.tagging_type}] {self.dataset[idx][self.index]}"
@@ -115,7 +116,8 @@ class Datasets:
                         elif self.tagging_type == 'Event':
                             temp = " ".join(self.dataset[idx][i][:left_parenthesis_index].split(' - ')[1:])
                             text += f"[{self.dataset[idx][i][:left_parenthesis_index].split(' - ')[0]}] {temp} "
-                text += " [END]"
+            text += "[END]"
+        
 
         encoded_sent = enconder(self.tokenizer, self.max_len, text = text)
         # print(encoded_sent.get('input_ids'))
@@ -156,7 +158,7 @@ class Datasets:
                             text += f"[{self.dataset[story_idx][i][:left_parenthesis_index].split(' - ')[0]}] {temp} "
             text += " [END]"
         elif self.Generation == 'question':
-            text = self.dataset[idx][2]
+            text = self.dataset[story_list[0]][2]
         
         encoded_sent = enconder(self.tokenizer, self.max_len, text = text)
         # print(encoded_sent.get('input_ids'))
