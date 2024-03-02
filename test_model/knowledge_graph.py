@@ -24,8 +24,8 @@ def create_knowledge_graph(context_type, context, core_context, target, tokenize
     text = f"Please utilize the provided context to generate 1 Event key information for this context, along with corresponding types .[Context] {core_context} [END]"
     event_tagging = generate_tagging('../save_model/Event/tagging/', text, tokenizer, model, device)
     
-    text = f"Please utilize the provided context and Event key information to generate question for this context [Context] {context} "     
-    Event_text = text + event_tagging
+    # text = f"Please utilize the provided context and Event key information to generate question for this context [Context] {context} "     
+    Event_text = text[:-5] + event_tagging
     event_question, e_score = generate_question('../save_model/Event/question/', Event_text, target, tokenizer, model, device)
 
     text = f"Please utilize the provided context to generate 1 Relation key information for this context, along with corresponding types .[Context] {core_context} [END]"    
@@ -101,7 +101,7 @@ def create_knowledge_graph(context_type, context, core_context, target, tokenize
     #     for key in Relation_graph[idx]:
     #         print(key, ":", Relation_graph[idx][key])
 
-    text, match = connect_knowledge_graph(context, core_graph, Event_graph, Relation_graph, tokenizer, device)
+    text, match = connect_knowledge_graph(context, core_graph, Event_graph, Relation_graph, tokenizer, device, target, model)
     if match:
         event_question, e_score = generate_question('../save_model/Event/question/', text, target, tokenizer, model, device)
         relation_question, r_score = generate_question('../save_model/Relation/question/', text, target, tokenizer, model, device)
@@ -146,7 +146,7 @@ def generate_question(path_save_model, text, target, tokenizer, model, device):
     return question, score
 
 ans = []
-def connect_knowledge_graph(context, core_graph, Event_graph, Relation_graph, tokenizer, device):
+def connect_knowledge_graph(context, core_graph, Event_graph, Relation_graph, tokenizer, device, target, model):
     """
     Input : 重點段落 Knowledge graph, 每句話的 Knowledge graph
     Output : 返回替換節點後的 Knowledge graph
@@ -156,34 +156,31 @@ def connect_knowledge_graph(context, core_graph, Event_graph, Relation_graph, to
     relation_dict = defaultdict(list)
 
     for idx in Relation_graph:
-        if Relation_graph[idx]['Event2'] not in relation_dict[Relation_graph[idx]['Event1']]:
-            relation_dict[Relation_graph[idx]['Event1']].append(Relation_graph[idx]['Event2'])
-        if Relation_graph[idx]['Event1'] not in relation_dict[Relation_graph[idx]['Event2']]:
-            relation_dict[Relation_graph[idx]['Event2']].append(Relation_graph[idx]['Event1'])
+        if [Relation_graph[idx]['Relation 1'], Relation_graph[idx]['Event2']] not in relation_dict[Relation_graph[idx]['Event1']]:
+            relation_dict[Relation_graph[idx]['Event1']].append([Relation_graph[idx]['Relation 1'], Relation_graph[idx]['Event2']])
+        if [Relation_graph[idx]['Relation 1'],Relation_graph[idx]['Event1']] not in relation_dict[Relation_graph[idx]['Event2']]:
+            relation_dict[Relation_graph[idx]['Event2']].append([Relation_graph[idx]['Relation 1'],Relation_graph[idx]['Event1']])
 
     dfs(core_graph['Event1'], [], relation_dict)
-    for text in ans:
-        for event in text:
-            print(event)
-        print('\n')
-    
+    # for text in ans:
+    #     for event in text:
+    #         print(event)
+    #     print('\n')
     # dfs(core_graph['Event2'], [], relation_dict)
     
-    for entity in core_graph:
-        print(entity, core_graph[entity])
-
-    input()
-
-    match_key = []
-    text += f'[Context] {context} '
-    for key, entity in core_graph.items(): 
-        if key not in match_key:
-            text += f'[{key}]{entity}'
-    for key, entity in Relation_graph.items(): 
-        if key not in ['Event', 'Relation'] and key not in match_key:
-            text += f'[{key}]{entity}'
-    text += '[END]'
+    print('Event 1', core_graph['Event1'])
+    print('Event 2', core_graph['Event2'])
     
+    for link in ans:
+        for event in link:
+            if event != core_graph['Event1'] and event != core_graph['Event2']:
+                text = f"Please utilize the provided context and Relation key information to generate question for this context [Context] {context} "
+                text += f'[Relation1] {core_graph["Relation1"]} '
+                text += f'[Event1] {core_graph["Event2"]} '
+                text += f'[Event2] {event} [END]'
+                print(text)
+                relation_question, r_score = generate_question('../save_model/Relation/question/', text, target, tokenizer, model, device)
+                input()
     return text, not relation_dict
 
 def dfs(text, temp, relation_dict):
@@ -196,7 +193,7 @@ def dfs(text, temp, relation_dict):
     for event in relation_dict:
         if text == event or temp[0] in event or event in temp[0]:
             for next_event in relation_dict[event]:
-                dfs(next_event, temp, relation_dict)
+                dfs(next_event[1], temp, relation_dict)
     temp.remove(text)
     return 
 

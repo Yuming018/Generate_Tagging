@@ -1,4 +1,4 @@
-from dataloader import Datasets
+from dataloader import Tagging_Datasets, Question_Datasets
 from model import create_model
 from training import train_model, training
 from inference import inference
@@ -25,16 +25,15 @@ def main(batch_size = 4,
     path_save_model = checkdir(path_save_model, event_or_relation, Generation)
     if Generation == 'tagging' :
         file_name = path_save_model + 'tagging.csv'
+        train_data = Tagging_Datasets('data/train.csv', model_name, event_or_relation = event_or_relation)
+        valid_data = Tagging_Datasets('data/valid.csv', model_name, event_or_relation = event_or_relation)
+        test_data = Tagging_Datasets('data/test.csv', model_name, event_or_relation = event_or_relation)
     elif Generation == 'question':
         file_name = path_save_model + 'question.csv'
+        train_data = Question_Datasets('data/train.csv', model_name, path_save_model = path_save_model)
+        valid_data = Question_Datasets('data/valid.csv', model_name, path_save_model = path_save_model)
+        test_data = Question_Datasets('data/test.csv', model_name, path_save_model = path_save_model)
     
-    train_data = Datasets('data/train.csv', model_name, event_or_relation = event_or_relation, Generation = Generation, path_save_model = path_save_model)
-    valid_data = Datasets('data/valid.csv', model_name, event_or_relation = event_or_relation, Generation = Generation, path_save_model = path_save_model)
-    test_data = Datasets('data/test.csv', model_name, event_or_relation = event_or_relation, Generation = Generation, path_save_model = path_save_model)
-    train_dataloader = DataLoader(train_data, batch_size = batch_size, drop_last = True)
-    valid_dataloader = DataLoader(valid_data, batch_size = batch_size, drop_last = True)
-    test_dataloader = DataLoader(test_data, batch_size = 1, drop_last = True)
-
     tokenizer = AutoTokenizer.from_pretrained(model_name)
     model = create_model(model_name).to(device)
     if not test_mode:
