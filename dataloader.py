@@ -2,7 +2,6 @@ import pandas as pd
 import numpy as np
 from tqdm import tqdm
 import re
-import torch
 from transformers import AutoTokenizer
 from copy import deepcopy
 from collections import defaultdict, Counter
@@ -47,7 +46,7 @@ class Tagging_Datasets:
     
         self.tokenizer = AutoTokenizer.from_pretrained(model_name)
         self.dataset = self.get_data(path)
-        self.datasets = []
+        self.datasets, self.paragraph = [], []
         self.create_dataset()  
 
     def get_data(self, path):
@@ -68,6 +67,7 @@ class Tagging_Datasets:
                     dict['input_ids'] = input_ids
                     dict['attention_mask'] = attention_mask
                     dict['labels'] = target_ids
+                    self.paragraph.append(self.dataset[idx][4])
                     self.datasets.append(dict)
             elif self.tagging_type == 'Relation':
                 current_story_name = "-".join(self.dataset[idx][4].split('-')[:-1])
@@ -78,7 +78,8 @@ class Tagging_Datasets:
                     dict['attention_mask'] = attention_mask
                     dict['labels'] = target_ids
                     self.datasets.append(dict)
-
+                    
+                    self.paragraph.append(story_name)
                     story_name = current_story_name
                     story_list = []
                 if tag_type in legal_tagging:
@@ -149,16 +150,17 @@ class Tagging_Datasets:
         return self.datasets[idx]
 
 class Question_Datasets:
-    def __init__(self, path, model_name, path_save_model) -> None:
+    def __init__(self, path, model_name) -> None:
         self.path = path
         self.max_len = 1024
-        self.count = 0
+        self.event_idx, self.realtion_idx = 0, 0
 
         self.tokenizer = AutoTokenizer.from_pretrained(model_name)
         self.dataset = self.get_data(path)
         if self.path == 'data/test.csv':
-            self.model_tagging = self.get_data("/".join(path_save_model.split('/')[:-2]) + '/tagging/tagging.csv')
-        self.datasets = []
+            self.Relation_tagging = self.get_data('save_model/Relation/tagging/tagging.csv')
+            self.Evnet_tagging = self.get_data('save_model/Event/tagging/tagging.csv')
+        self.datasets, self.paragraph = [], []
         self.create_dataset()  
 
     def get_data(self, path):
@@ -171,7 +173,6 @@ class Question_Datasets:
         story_list = []
         for idx in tqdm(range(len(self.dataset))):
             dict = {}
-            tag_type = self.dataset[idx][self.index].split(' - ')[0]
             current_story_name = "-".join(self.dataset[idx][4].split('-')[:-1])
             if current_story_name != story_name and story_list:
                 input_ids, attention_mask = self.create_input(story_list)
@@ -181,28 +182,34 @@ class Question_Datasets:
                 dict['labels'] = target_ids
                 self.datasets.append(dict)
 
+                self.paragraph.append(story_name)
                 story_name = current_story_name
                 story_list = []
-            if tag_type in legal_tagging:
+            if self.dataset[idx][5].split(' - ')[0] in legal_tagging or self.dataset[idx][6].split(' - ')[0] in legal_tagging:
                 story_list.append(idx)
         return          
 
     def create_input(self, story_list):
-        # context = text_segmentation(self.dataset[idx])
         context = self.dataset[story_list[0]][1]
-        # for key, definition in Relation_definition_2.items():
-        #     text += f'[{key}] {definition} '
-        # text += f"[Type] {self.dataset[idx][0]} [Context] {context} "
         
         text = f"Please utilize the provided context and key information to generate question for this context "
         text += f'[Context] {context} '
         if self.path == 'data/test.csv':
-            text += self.model_tagging[self.count][2]
-            self.count += 1
+            paragraph = "-".join(self.dataset[story_list[0]][4].split('-')[:-1])
+            while self.event_idx < len(self.Evnet_tagging) and "-".join(self.Evnet_tagging[self.event_idx][0].split('-')[:-1]) == paragraph:
+                tagging = self.Evnet_tagging[self.event_idx][2].replace('[END]', '')
+                text += tagging
+                self.event_idx += 1
+            while self.realtion_idx < len(self.Relation_tagging) and self.Relation_tagging[self.realtion_idx][0] == paragraph:
+                tagging = self.Relation_tagging[self.realtion_idx][2].replace('[END]', '')
+                text += tagging
+                self.realtion_idx += 1
+            text += '[END]'
         else:  
             for idx in story_list:
-                tagging_type = ""
-                text += f"[{tagging_type}] {self.dataset[idx][self.index]}"
+                tagging_type = 'Event' if self.dataset[idx][5] else 'Relation'
+                tagging = self.dataset[idx][5] if self.dataset[idx][5] else self.dataset[idx][6]
+                text += f"[{tagging_type}] {tagging}"
                 for i in range(7, len(self.dataset[idx])):
                     if self.dataset[idx][i] != '':
                         left_parenthesis_index = self.dataset[idx][i].rfind('(')
@@ -214,14 +221,17 @@ class Question_Datasets:
                             temp = " ".join(self.dataset[idx][i][:left_parenthesis_index].split(' - ')[1:])
                             text += f"[{self.dataset[idx][i][:left_parenthesis_index].split(' - ')[0]}] {temp} "
             text += "[END]"
-        
+
         encoded_sent = enconder(self.tokenizer, self.max_len, text = text)
         # print(encoded_sent.get('input_ids'))
-        # print(self.tokenizer.decode(encoded_sent.get('input_ids'), skip_special_tokens=True))        
+        # print(self.tokenizer.decode(encoded_sent.get('input_ids'), skip_special_tokens=True))   
         return encoded_sent.get('input_ids'), encoded_sent.get('attention_mask')
 
     def create_target(self, story_list):
-        text = self.dataset[story_list[0]][2]
+        text = ""
+        for idx, story_idx in enumerate(story_list):
+            text += f"[Question {idx+1}] {self.dataset[story_idx][2]} "
+        text += "[END]"
         encoded_sent = enconder(self.tokenizer, self.max_len, text = text)
         # print(encoded_sent.get('input_ids'))
         # print(self.tokenizer.decode(encoded_sent.get('input_ids'), skip_special_tokens=True))

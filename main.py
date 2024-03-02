@@ -19,7 +19,8 @@ def main(batch_size = 4,
    
     model_name = "bigscience/mt0-large"
     
-    print('Tagging : ', event_or_relation)
+    if Generation == 'tagging' :
+        print('Tagging : ', event_or_relation)
     print('Generation : ', Generation)
 
     path_save_model = checkdir(path_save_model, event_or_relation, Generation)
@@ -30,16 +31,16 @@ def main(batch_size = 4,
         test_data = Tagging_Datasets('data/test.csv', model_name, event_or_relation = event_or_relation)
     elif Generation == 'question':
         file_name = path_save_model + 'question.csv'
-        train_data = Question_Datasets('data/train.csv', model_name, path_save_model = path_save_model)
-        valid_data = Question_Datasets('data/valid.csv', model_name, path_save_model = path_save_model)
-        test_data = Question_Datasets('data/test.csv', model_name, path_save_model = path_save_model)
+        train_data = Question_Datasets('data/train.csv', model_name)
+        valid_data = Question_Datasets('data/valid.csv', model_name)
+        test_data = Question_Datasets('data/test.csv', model_name)
     
     tokenizer = AutoTokenizer.from_pretrained(model_name)
     model = create_model(model_name).to(device)
     if not test_mode:
         training(model, tokenizer, train_data, valid_data, path_save_model, epochs=epochs, batch_size = batch_size)
         # train_model(model, train_dataloader, valid_dataloader, device, tokenizer=tokenizer, epochs=epochs, path_save_model = best_pth)
-    inference(model, tokenizer, test_data, device, save_file_path = file_name, path_save_model = path_save_model)
+    inference(model, tokenizer, test_data, test_data.paragraph, device, save_file_path = file_name, path_save_model = path_save_model)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
