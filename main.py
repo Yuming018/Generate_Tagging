@@ -6,6 +6,7 @@ from helper import checkdir
 import argparse
 import torch
 import csv
+import statistics
 from torch.utils.data import DataLoader
 from transformers import AutoTokenizer
 

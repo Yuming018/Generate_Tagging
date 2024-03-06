@@ -26,14 +26,14 @@ def create_knowledge_graph(context_type, context, core_context, target, tokenize
     
     # text = f"Please utilize the provided context and Event key information to generate question for this context [Context] {context} "     
     Event_text = text[:-5] + event_tagging
-    event_question, e_score = generate_question('../save_model/Event/question/', Event_text, target, tokenizer, model, device)
+    event_question, e_score = generate_question('../save_model/question/', Event_text, target, tokenizer, model, device)
 
     text = f"Please utilize the provided context to generate 1 Relation key information for this context, along with corresponding types .[Context] {core_context} [END]"    
     relation_tagging = generate_tagging('../save_model/Relation/tagging/', text, tokenizer, model, device)
     
     text = f"Please utilize the provided context and Relation key information to generate question for this context [Context] {context} "    
     Relation_text = text + relation_tagging
-    relation_question, r_score = generate_question('../save_model/Relation/question/', Relation_text, target, tokenizer, model, device)
+    relation_question, r_score = generate_question('../save_model/question/', Relation_text, target, tokenizer, model, device)
 
     # if e_score >= r_score:
     #     tagging = event_tagging
@@ -103,8 +103,8 @@ def create_knowledge_graph(context_type, context, core_context, target, tokenize
 
     text, match = connect_knowledge_graph(context, core_graph, Event_graph, Relation_graph, tokenizer, device, target, model)
     if match:
-        event_question, e_score = generate_question('../save_model/Event/question/', text, target, tokenizer, model, device)
-        relation_question, r_score = generate_question('../save_model/Relation/question/', text, target, tokenizer, model, device)
+        event_question, e_score = generate_question('../save_model/question/', text, target, tokenizer, model, device)
+        relation_question, r_score = generate_question('../save_model/question/', text, target, tokenizer, model, device)
         
     input()
     return "", 0

@@ -29,7 +29,6 @@ def main(device = 'cpu'):
     model_name = "bigscience/mt0-large"
     tokenizer = AutoTokenizer.from_pretrained(model_name)
     model = create_model(model_name).to(device)
-    
     dataset = Dataset(path = '../data/test.csv', model_name = model_name)
     
     model.eval()

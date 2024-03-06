@@ -16,7 +16,7 @@ def checkdir(path_save_model, event_or_relation, Generation):
             os.mkdir(path_save_model)
         path_save_model += '/tagging/'
     elif Generation == 'question':
-        path_save_model += '/question/'
+        path_save_model += '/Question/'
     
     if not os.path.isdir(path_save_model):
         os.mkdir(path_save_model)

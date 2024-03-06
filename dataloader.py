@@ -14,6 +14,19 @@ legal_tagging = ['Causal Effect',
             'Action'
 ]
 
+Relation_label = {'X attribute': 'Persona', 
+         'X intent' : 'MentalState', 
+         'X reaction' : 'MentalState', 
+         'Other reaction' : 'MentalState',
+         'isBefore' : 'isBefore', 
+         'the same' : 'the same', 
+         'isAfter' : 'isAfter', 
+         'X need' : 'Event', 
+         'Effect on X' : 'Event',  
+         'X want'  : 'Event', 
+         'Other want'  : 'Event', 
+         'Effect on other'  : 'Event'}
+
 Relation_definition = {
     'X intent' : "Why does X cause the event?",
     'X reaction' : "How does X feel after the event?",
