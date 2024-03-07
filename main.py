@@ -44,7 +44,7 @@ def main(batch_size = 4,
     if not test_mode:
         training(model, tokenizer, train_data, valid_data, path_save_model, epochs=epochs, batch_size = batch_size)
         # train_model(model, train_dataloader, valid_dataloader, device, tokenizer=tokenizer, epochs=epochs, path_save_model = best_pth)
-    inference(model, tokenizer, test_data, test_data.paragraph, device, save_file_path = file_name, path_save_model = path_save_model)
+    inference(model_name, model, tokenizer, test_data, test_data.paragraph, device, save_file_path = file_name, path_save_model = path_save_model)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
