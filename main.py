@@ -7,8 +7,6 @@ import argparse
 import torch
 from torch.utils.data import DataLoader
 
-
-
 def main(batch_size = 4,
          epochs=10,
          path_save_model = 'save_model',
@@ -31,7 +29,7 @@ def main(batch_size = 4,
     model, tokenizer = create_model[model_name]
     model = model.to(device)
 
-    path_save_model = checkdir(path_save_model, event_or_relation, Generation)
+    path_save_model = checkdir(path_save_model, event_or_relation, Generation, model_name)
     if Generation == 'tagging' :
         file_name = path_save_model + 'tagging.csv'
         train_data = Tagging_Datasets('data/train.csv', tokenizer, event_or_relation = event_or_relation)

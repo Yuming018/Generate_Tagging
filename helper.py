@@ -1,23 +1,25 @@
 import os
 import re
 
-def checkdir(path_save_model, event_or_relation, Generation):
+def checkdir(path_save_model, event_or_relation, Generation, model_name):
     
     if not os.path.isdir(path_save_model):
         os.mkdir(path_save_model)
     
     if Generation == 'tagging' :
-        if event_or_relation == 'Relation' :
-            path_save_model += '/Relation'
-        elif event_or_relation == 'Event' :
-            path_save_model += '/Event'
-
+        path_save_model += f'/{event_or_relation}'
         if not os.path.isdir(path_save_model):
             os.mkdir(path_save_model)
-        path_save_model += '/tagging/'
+
+        path_save_model += '/tagging'
     elif Generation == 'question':
-        path_save_model += '/Question/'
+        path_save_model += '/Question'
     
+    if not os.path.isdir(path_save_model):
+        os.mkdir(path_save_model)
+    
+    path_save_model += f'/{model_name}/'
+
     if not os.path.isdir(path_save_model):
         os.mkdir(path_save_model)
 
