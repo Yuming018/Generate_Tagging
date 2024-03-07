@@ -19,7 +19,7 @@ def main(batch_size = 4,
     if Generation == 'tagging' :
         print('Tagging : ', event_or_relation)
     print('Generation : ', Generation)
-    print('Model name :', model_name)
+    print('Model name :', model_name, '\n')
 
     create_model = {
         "Mt0" : Mt0(),
@@ -32,14 +32,14 @@ def main(batch_size = 4,
     path_save_model = checkdir(path_save_model, event_or_relation, Generation, model_name)
     if Generation == 'tagging' :
         file_name = path_save_model + 'tagging.csv'
-        train_data = Tagging_Datasets('data/train.csv', tokenizer, event_or_relation = event_or_relation)
-        valid_data = Tagging_Datasets('data/valid.csv', tokenizer, event_or_relation = event_or_relation)
-        test_data = Tagging_Datasets('data/test.csv', tokenizer, event_or_relation = event_or_relation)
+        train_data = Tagging_Datasets('data/train.csv', model_name, tokenizer, event_or_relation = event_or_relation)
+        valid_data = Tagging_Datasets('data/valid.csv', model_name, tokenizer, event_or_relation = event_or_relation)
+        test_data = Tagging_Datasets('data/test.csv', model_name, tokenizer, event_or_relation = event_or_relation)
     elif Generation == 'question':
         file_name = path_save_model + 'question.csv'
-        train_data = Question_Datasets('data/train.csv', tokenizer)
-        valid_data = Question_Datasets('data/valid.csv', tokenizer)
-        test_data = Question_Datasets('data/test.csv', tokenizer)
+        train_data = Question_Datasets('data/train.csv', model_name, tokenizer)
+        valid_data = Question_Datasets('data/valid.csv', model_name, tokenizer)
+        test_data = Question_Datasets('data/test.csv', model_name, tokenizer)
     
     if not test_mode:
         training(model, tokenizer, train_data, valid_data, path_save_model, epochs=epochs, batch_size = batch_size)

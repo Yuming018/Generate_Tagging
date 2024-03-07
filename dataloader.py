@@ -48,9 +48,10 @@ Relation_definition_2 = {
 }
 
 class Tagging_Datasets:
-    def __init__(self, path, tokenizer, event_or_relation) -> None:
+    def __init__(self, path, model_name, tokenizer, event_or_relation) -> None:
         self.path = path
         self.max_len = 512
+        self.model_name = model_name
         self.tagging_type = event_or_relation
         if event_or_relation == 'Event':
             self.index = 5 #index
@@ -108,10 +109,13 @@ class Tagging_Datasets:
         #     text += f'[{key}] {definition} '
         # text += f"[Type] {self.dataset[idx][0]} [Context] {context} "
         
-        text = f"Please utilize the provided context to generate {self.tagging_type} 1 "
-        for i in range(1, len(story_list)):
-            text += f"and {self.tagging_type} {i+1} "
-        text += f"key information for this context [Context] {context} [END]"
+        if self.model_name == 'Mt0':
+            text = f"Please utilize the provided context to generate {self.tagging_type} 1 "
+            for i in range(1, len(story_list)):
+                text += f"and {self.tagging_type} {i+1} "
+            text += f"key information for this context [Context] {context} [END]"
+        elif self.model_name == 'T5':
+            text = f"[Context] {context} [END]"
         
         encoded_sent = enconder(self.tokenizer, self.max_len, text = text)
         # print(encoded_sent.get('input_ids'))
@@ -163,12 +167,13 @@ class Tagging_Datasets:
         return self.datasets[idx]
 
 class Question_Datasets:
-    def __init__(self, path, model_name) -> None:
+    def __init__(self, path, model_name, tokenizer) -> None:
         self.path = path
         self.max_len = 1024
         self.event_idx, self.realtion_idx = 0, 0
 
-        self.tokenizer = AutoTokenizer.from_pretrained(model_name)
+        self.model_name = model_name
+        self.tokenizer = tokenizer
         self.dataset = self.get_data(path)
         if self.path == 'data/test.csv':
             self.Relation_tagging = self.get_data('save_model/Relation/tagging/tagging.csv')
@@ -205,8 +210,13 @@ class Question_Datasets:
     def create_input(self, story_list):
         context = self.dataset[story_list[0]][1]
         
-        text = f"Please utilize the provided context and key information to generate question for this context "
-        text += f'[Context] {context} '
+        if self.model_name == 'Mt0':
+            text = f"Please utilize the provided context and key information to generate question for this context "
+            text += f'[Context] {context} '
+        elif self.model_name == 'T5':
+            text = f'[Context] {context} '
+
+
         if self.path == 'data/test.csv':
             paragraph = "-".join(self.dataset[story_list[0]][4].split('-')[:-1])
             while self.event_idx < len(self.Evnet_tagging) and "-".join(self.Evnet_tagging[self.event_idx][0].split('-')[:-1]) == paragraph:
