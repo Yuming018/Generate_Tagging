@@ -1,6 +1,7 @@
 import pandas as pd
 import argparse
 import statistics
+import matplotlib.pyplot as plt
 from collections import defaultdict, Counter
 
 legal_tagging = ['Causal Effect',
@@ -108,6 +109,37 @@ def visualize(title, vis_data, count_data):
     print('min :', count_data.most_common()[-1])
     print('max :', count_data.most_common()[0], '\n')
 
+    return Counter(count_data.values())
+
+def display_histogram(event_or_relation, train_data, valid_data, test_data):
+    train_keys, train_values = list(train_data.keys()), list(train_data.values())
+    valid_keys, valid_values = list(valid_data.keys()), list(valid_data.values())
+    test_keys, test_values = list(test_data.keys()), list(test_data.values())
+    
+    bar_width = 0.25
+    color_train = 'blue'
+    color_valid = 'orange'
+    color_test = 'green'
+
+    plt.bar([key - bar_width for key in train_keys], train_values, width=bar_width, color=color_train, label='Train data', edgecolor='black')
+    plt.bar(valid_keys, valid_values, width=bar_width, color=color_valid, label='Valid data', edgecolor='black')
+    plt.bar([key + bar_width for key in test_keys], test_values, width=bar_width, color=color_test, label='Test data', edgecolor='black')
+
+    for i, value in enumerate(train_values):
+        plt.text(train_keys[i] - bar_width, value + 0.1, str(value), ha='center', va='bottom', color=color_train)
+
+    for i, value in enumerate(valid_values):
+        plt.text(valid_keys[i], value + 0.1, str(value), ha='center', va='bottom', color=color_valid)
+
+    for i, value in enumerate(test_values):
+        plt.text(test_keys[i] + bar_width, value + 0.1, str(value), ha='center', va='bottom', color=color_test)
+
+    plt.title(f'{event_or_relation} Tagging per Question')
+    plt.xlabel('Tagging count')
+    plt.ylabel('Frequency')
+    plt.legend()
+    plt.show()
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--event_or_relation', '-t', type=str, choices=['Event', 'Relation'], default='Event')
@@ -124,10 +156,8 @@ if __name__ == '__main__':
         test_data = Question_Datasets('data/test.csv')
 
 
-    visualize('Train', train_data.vis_data, train_data.count_data)
-    visualize('Valid', valid_data.vis_data, valid_data.count_data)
-    visualize('Test', test_data.vis_data, test_data.count_data)
+    train_count_data = visualize('Train', train_data.vis_data, train_data.count_data)
+    valid_count_data = visualize('Valid', valid_data.vis_data, valid_data.count_data)
+    test_count_data = visualize('Test', test_data.vis_data, test_data.count_data)
 
-    if args.Generation == 'tagging' :
-        print('Tagging : ', args.event_or_relation)
-    print('Generation : ', args.Generation)
+    display_histogram(args.event_or_relation, train_count_data, valid_count_data, test_count_data)

@@ -48,7 +48,7 @@ Relation_definition_2 = {
 }
 
 class Tagging_Datasets:
-    def __init__(self, path, model_name, event_or_relation) -> None:
+    def __init__(self, path, tokenizer, event_or_relation) -> None:
         self.path = path
         self.max_len = 512
         self.tagging_type = event_or_relation
@@ -57,7 +57,7 @@ class Tagging_Datasets:
         elif event_or_relation == 'Relation':
             self.index = 6 #index
     
-        self.tokenizer = AutoTokenizer.from_pretrained(model_name)
+        self.tokenizer = tokenizer
         self.dataset = self.get_data(path)
         self.datasets, self.paragraph = [], []
         self.create_dataset()  
