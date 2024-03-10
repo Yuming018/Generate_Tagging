@@ -297,17 +297,22 @@ if __name__ == '__main__':
     parser.add_argument('--Type', '-t',
                         choices=["Relation", "Event"],
                         type=str,
-                        default='Relation')
+                        default='Event')
     parser.add_argument('--Generation', '-g',
                         choices=["tagging", "question"],
                         type=str,
                         default='tagging')
+    parser.add_argument('--Model', '-m',
+                        choices=['Mt0', 'T5'],
+                        type=str,
+                        default='Mt0')
     args = parser.parse_args()
     
     print('Type : ', args.Type)
-    print('Generation : ', args.Generation, '\n')
+    print('Generation : ', args.Generation)
+    print('Generation : ', args.Model, '\n')
 
-    path = f'save_model/{args.Type}/{args.Generation}/'
+    path = f'save_model/{args.Type}/{args.Generation}/{args.Model}/'
     if args.Type == 'Event':
         eval = eval_Event(path + f'{args.Generation}.csv')
         eval.NER_eval()

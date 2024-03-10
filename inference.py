@@ -1,14 +1,15 @@
 import csv
-import os
 import torch
 from tqdm import tqdm
-from transformers import GenerationConfig, AutoModelForSeq2SeqLM, AutoTokenizer
+from transformers import GenerationConfig, AutoModelForSeq2SeqLM
 from peft import PeftConfig, PeftModel
 from helper import check_checkpoint
 
 def inference(model_name, model, tokenizer, test_dataloader, test_data_paprgraph, device, save_file_path, path_save_model):
     model_path = check_checkpoint(path_save_model)
     if model_name == "Mt0":
+        config = PeftConfig.from_pretrained(model_path)
+        model = AutoModelForSeq2SeqLM.from_pretrained(config.base_model_name_or_path, device_map={"":0})
         model = PeftModel.from_pretrained(model, model_path, device_map={"":0})
     elif model_name == 'T5':
         model = AutoModelForSeq2SeqLM.from_pretrained(model_path).to(device)
