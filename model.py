@@ -45,7 +45,18 @@ def gemma():
 
     tokenizer = AutoTokenizer.from_pretrained(model_name)
     model = AutoModelForCausalLM.from_pretrained(model_name)
-    return model, tokenizer 
+
+    lora_config = LoraConfig(
+        task_type="CAUSAL_LM",
+        inference_mode=False,
+        r=16,
+        lora_alpha=32, 
+        lora_dropout=0.1,
+        target_modules=["q_proj", "o_proj", "k_proj", "v_proj", "gate_proj", "up_proj", "down_proj"],
+    )
+    peft_model = get_peft_model(model, lora_config)
+    peft_model.config.use_cache = False
+    return peft_model, tokenizer 
 
 if __name__ == '__main__':
     pass

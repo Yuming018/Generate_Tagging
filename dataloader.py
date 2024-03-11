@@ -32,7 +32,7 @@ Relation_definition_2 = {
 class Tagging_Datasets:
     def __init__(self, path, model_name, tokenizer, event_or_relation) -> None:
         self.path = path
-        self.max_len = 512
+        self.max_len = 256
         self.model_name = model_name
         self.tagging_type = event_or_relation
         if event_or_relation == 'Event':
