@@ -1,5 +1,5 @@
 import torch.nn as nn
-from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
+from transformers import AutoTokenizer, AutoModelForSeq2SeqLM, AutoModelForCausalLM
 from peft import get_peft_model, PromptTuningInit, PromptTuningConfig, TaskType, LoraConfig
 
 def Mt0():
@@ -27,12 +27,25 @@ def T5():
     return model, tokenizer
 
 def Bart():
-    model_name = "facebook/bart-large"
+    model_name = "facebook/bart-large-cnn"
 
     tokenizer = AutoTokenizer.from_pretrained(model_name)
     model = AutoModelForSeq2SeqLM.from_pretrained(model_name)
     return model, tokenizer 
 
+def roberta():
+    model_name = "deepset/roberta-large-squad2"
+
+    tokenizer = AutoTokenizer.from_pretrained(model_name)
+    model = AutoModelForCausalLM.from_pretrained(model_name)
+    return model, tokenizer 
+
+def gemma():
+    model_name = "google/gemma-2b"
+
+    tokenizer = AutoTokenizer.from_pretrained(model_name)
+    model = AutoModelForCausalLM.from_pretrained(model_name)
+    return model, tokenizer 
 
 if __name__ == '__main__':
     pass

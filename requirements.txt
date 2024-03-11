@@ -1,6 +1,6 @@
 pandas
 torch
-transformers
+transformers==4.30.2
 gdown==5.1.0
 peft
 evaluate

@@ -2,7 +2,7 @@ import torch
 import time
 import numpy as np
 from transformers import GenerationConfig
-from transformers import AutoTokenizer, Trainer, DataCollatorForSeq2Seq, Seq2SeqTrainingArguments
+from transformers import Trainer, DataCollatorForSeq2Seq, Seq2SeqTrainingArguments, TrainingArguments, DataCollatorForLanguageModeling
 
 loss_fn = torch.nn.CrossEntropyLoss()
 
@@ -119,6 +119,7 @@ def training(model, tokenizer, train_data, valid_data, path_save_model, epochs, 
         weight_decay=0.01,
         include_inputs_for_metrics=True,
         lr_scheduler_type="polynomial",
+        dataloader_prefetch_factor = None,
     )
 
     trainer = Trainer(
@@ -130,6 +131,7 @@ def training(model, tokenizer, train_data, valid_data, path_save_model, epochs, 
         data_collator=collate_fn,
         tokenizer=tokenizer,
     )
+
     trainer.train()
     # model.save_pretrained(path_save_model)
 

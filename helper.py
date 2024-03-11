@@ -42,7 +42,7 @@ def enconder(tokenizer, max_len=256, text = ''):
         text = text,  
         add_special_tokens=True,
         truncation=True,  
-        padding = 'longest',   
+        padding = 'max_length',   
         max_length = max_len,        
         #return_tensors='pt',           
         return_attention_mask=True      
@@ -51,7 +51,7 @@ def enconder(tokenizer, max_len=256, text = ''):
 
 def check_checkpoint(path_save_model):
     checkpoints_list = [int(f.split('-')[1]) for f in os.listdir(path_save_model + 'checkpoints')]
-    model_path = path_save_model + f'checkpoints/checkpoint-{min(checkpoints_list)}/'
+    model_path = path_save_model + f'checkpoints/checkpoint-{max(checkpoints_list)}/'
     return model_path
 
 if __name__ == '__main__':

@@ -133,10 +133,12 @@ def display_histogram(event_or_relation, train_data, valid_data, test_data):
 
     for i, value in enumerate(test_values):
         plt.text(test_keys[i] + bar_width, value + 0.1, str(value), ha='center', va='bottom', color=color_test)
-
+    
+    x_ticks = list(range(1, max(max(train_keys), max(valid_keys), max(test_keys)) + 1))
+    plt.xticks(x_ticks)
     plt.title(f'{event_or_relation} Tagging per Question')
-    plt.xlabel('Tagging count')
-    plt.ylabel('Frequency')
+    plt.xlabel('Tagging per Question')
+    plt.ylabel('Question count')
     plt.legend()
     plt.show()
 
