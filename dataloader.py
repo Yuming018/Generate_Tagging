@@ -98,7 +98,7 @@ class Tagging_Datasets:
             for i in range(1, len(story_list)):
                 text += f"and {self.tagging_type} {i+1} "
             text += f"key information for this context [Context] {context} [END]"
-        elif self.model_name == 'T5':
+        elif self.model_name == 'T5' or self.model_name == 'Bart':
             text = f"[Context] {context} [END]"
         
         encoded_sent = enconder(self.tokenizer, self.max_len, text = text)
@@ -197,7 +197,7 @@ class Question_Datasets:
         if self.model_name == 'Mt0':
             text = f"Please utilize the provided context and key information to generate question for this context "
             text += f'[Context] {context} '
-        elif self.model_name == 'T5':
+        elif self.model_name == 'T5' or self.model_name == 'Bart':
             text = f'[Context] {context} '
 
 

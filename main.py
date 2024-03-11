@@ -1,5 +1,5 @@
 from dataloader import Tagging_Datasets, Question_Datasets
-from model import Mt0, T5
+from model import Mt0, T5, Bart
 from training import train_model, training
 from inference import inference
 from helper import checkdir
@@ -24,6 +24,7 @@ def main(batch_size = 4,
     create_model = {
         "Mt0" : Mt0(),
         "T5" : T5(),
+        "Bart" : Bart(),
     }
 
     model, tokenizer = create_model[model_name]
@@ -53,7 +54,7 @@ if __name__ == '__main__':
     parser.add_argument('--test_mode', '-tm', type=bool, default=False)
     parser.add_argument('--event_or_relation', '-t', type=str, choices=['Event', 'Relation'], default='Event')
     parser.add_argument('--Generation', '-g', type=str, choices=['tagging', 'question'], default='tagging')
-    parser.add_argument('--Model', '-m', type=str, choices=['Mt0', 'T5'], default='Mt0')
+    parser.add_argument('--Model', '-m', type=str, choices=['Mt0', 'T5', 'Bart'], default='Mt0')
     args = parser.parse_args()
     
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")

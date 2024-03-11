@@ -26,6 +26,13 @@ def T5():
     model = AutoModelForSeq2SeqLM.from_pretrained(model_name)
     return model, tokenizer
 
+def Bart():
+    model_name = "facebook/bart-large"
+
+    tokenizer = AutoTokenizer.from_pretrained(model_name)
+    model = AutoModelForSeq2SeqLM.from_pretrained(model_name)
+    return model, tokenizer 
+
 
 if __name__ == '__main__':
     pass
