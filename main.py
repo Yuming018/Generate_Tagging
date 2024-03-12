@@ -9,6 +9,7 @@ from torch.utils.data import DataLoader
 
 def main(batch_size = 4,
          epochs=10,
+         max_len = 512,
          path_save_model = 'save_model',
          device = 'cpu',
          test_mode = False,
@@ -35,14 +36,14 @@ def main(batch_size = 4,
     path_save_model = checkdir(path_save_model, event_or_relation, Generation, model_name)
     if Generation == 'tagging' :
         file_name = path_save_model + 'tagging.csv'
-        train_data = Tagging_Datasets('data/train.csv', model_name, tokenizer, event_or_relation = event_or_relation)
-        valid_data = Tagging_Datasets('data/valid.csv', model_name, tokenizer, event_or_relation = event_or_relation)
-        test_data = Tagging_Datasets('data/test.csv', model_name, tokenizer, event_or_relation = event_or_relation)
+        train_data = Tagging_Datasets('data/train.csv', model_name, tokenizer, event_or_relation = event_or_relation, max_len = max_len)
+        valid_data = Tagging_Datasets('data/valid.csv', model_name, tokenizer, event_or_relation = event_or_relation, max_len = max_len)
+        test_data = Tagging_Datasets('data/test.csv', model_name, tokenizer, event_or_relation = event_or_relation, max_len = max_len)
     elif Generation == 'question':
         file_name = path_save_model + 'question.csv'
-        train_data = Question_Datasets('data/train.csv', model_name, tokenizer)
-        valid_data = Question_Datasets('data/valid.csv', model_name, tokenizer)
-        test_data = Question_Datasets('data/test.csv', model_name, tokenizer)
+        train_data = Question_Datasets('data/train.csv', model_name, tokenizer, max_len)
+        valid_data = Question_Datasets('data/valid.csv', model_name, tokenizer, max_len)
+        test_data = Question_Datasets('data/test.csv', model_name, tokenizer, max_len)
     
     if not test_mode:
         training(model, tokenizer, train_data, valid_data, path_save_model, epochs=epochs, batch_size = batch_size)
@@ -53,6 +54,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--epoch', '-e', type=int, default=5)
     parser.add_argument('--batch_size', '-b', type=int, default=2)
+    parser.add_argument('--max_len', '-l', type=int, default=512)
     parser.add_argument('--test_mode', '-tm', type=bool, default=False)
     parser.add_argument('--event_or_relation', '-t', type=str, choices=['Event', 'Relation'], default='Event')
     parser.add_argument('--Generation', '-g', type=str, choices=['tagging', 'question'], default='tagging')
@@ -63,6 +65,7 @@ if __name__ == '__main__':
     print(device)
     main(batch_size = args.batch_size,
         epochs = args.epoch,
+        max_len = args.max_len,
         device = device, 
         test_mode = args.test_mode, 
         event_or_relation = args.event_or_relation, 

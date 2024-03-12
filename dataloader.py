@@ -30,9 +30,9 @@ Relation_definition_2 = {
 }
 
 class Tagging_Datasets:
-    def __init__(self, path, model_name, tokenizer, event_or_relation) -> None:
+    def __init__(self, path, model_name, tokenizer, event_or_relation, max_len) -> None:
         self.path = path
-        self.max_len = 256
+        self.max_len = max_len
         self.model_name = model_name
         self.tagging_type = event_or_relation
         if event_or_relation == 'Event':
@@ -96,12 +96,15 @@ class Tagging_Datasets:
             for i in range(1, len(story_list)):
                 text += f"and {self.tagging_type} {i+1} "
             text += f"key information for this context [Context] {context} [END]"
-        elif self.model_name == 'T5' or self.model_name == 'Bart' or self.model_name == 'roberta' or self.model_name == 'gemma' :
+        elif self.model_name == 'T5' or self.model_name == 'Bart' or self.model_name == 'gemma' :
             text = f"[Context] {context} [END]"
+        elif self.model_name == 'roberta':
+            question = f'What {self.tagging_type} key information is included in this context?'
+            text = (question, f"[Context] {context} [END]")
         
         encoded_sent = enconder(self.tokenizer, self.max_len, text = text)
         # print(encoded_sent.get('input_ids'))
-        # print(self.tokenizer.decode(encoded_sent.get('input_ids'), skip_special_tokens=True))        
+        # print(self.tokenizer.decode(encoded_sent.get('input_ids'), skip_special_tokens=True))       
         return encoded_sent.get('input_ids'), encoded_sent.get('attention_mask')
 
     def create_target(self, story_list):
@@ -149,9 +152,9 @@ class Tagging_Datasets:
         return self.datasets[idx]
 
 class Question_Datasets:
-    def __init__(self, path, model_name, tokenizer) -> None:
+    def __init__(self, path, model_name, tokenizer, max_len) -> None:
         self.path = path
-        self.max_len = 1024
+        self.max_len = max_len
         self.event_idx, self.realtion_idx = 0, 0
 
         self.model_name = model_name
