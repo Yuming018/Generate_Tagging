@@ -26,6 +26,13 @@ def T5():
     model = AutoModelForSeq2SeqLM.from_pretrained(model_name)
     return model, tokenizer
 
+def flant5():
+    model_name = "google/flan-t5-base"
+
+    tokenizer = AutoTokenizer.from_pretrained(model_name)
+    model = AutoModelForSeq2SeqLM.from_pretrained(model_name)
+    return model, tokenizer
+
 def Bart():
     model_name = "facebook/bart-large-cnn"
 

@@ -1,7 +1,7 @@
 import csv
 import torch
 from tqdm import tqdm
-from transformers import GenerationConfig, AutoModelForSeq2SeqLM, AutoModelForCausalLM, AutoModelForQuestionAnswering
+from transformers import GenerationConfig, AutoModelForSeq2SeqLM, AutoModelForCausalLM
 from peft import PeftConfig, PeftModel
 from helper import check_checkpoint
 
@@ -11,10 +11,10 @@ def inference(model_name, model, tokenizer, test_dataloader, test_data_paprgraph
         config = PeftConfig.from_pretrained(model_path)
         model = AutoModelForSeq2SeqLM.from_pretrained(config.base_model_name_or_path, device_map={"":0})
         model = PeftModel.from_pretrained(model, model_path, device_map={"":0})
-    elif model_name == 'T5' or model_name == 'Bart' :
+    elif model_name == 'T5' or model_name == 'Bart' or model_name == 'flant5' :
         model = AutoModelForSeq2SeqLM.from_pretrained(model_path).to(device)
     elif model_name == 'roberta':
-        model = AutoModelForQuestionAnswering.from_pretrained(model_path).to(device)
+        model = AutoModelForCausalLM.from_pretrained(model_path).to(device)
     elif model_name == 'gemma':
         config = PeftConfig.from_pretrained(model_path)
         model = AutoModelForCausalLM.from_pretrained(config.base_model_name_or_path, device_map={"":0})
