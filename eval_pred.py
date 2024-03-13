@@ -303,14 +303,14 @@ if __name__ == '__main__':
                         type=str,
                         default='tagging')
     parser.add_argument('--Model', '-m',
-                        choices=['Mt0', 'T5'],
+                        choices=['Mt0', 'T5', 'Bart', 'roberta', 'gemma', 'flant5'],
                         type=str,
                         default='Mt0')
     args = parser.parse_args()
     
     print('Type : ', args.Type)
     print('Generation : ', args.Generation)
-    print('Generation : ', args.Model, '\n')
+    print('Model : ', args.Model, '\n')
 
     path = f'save_model/{args.Type}/{args.Generation}/{args.Model}/'
     if args.Type == 'Event':

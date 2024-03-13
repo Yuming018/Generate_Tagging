@@ -91,12 +91,12 @@ class Tagging_Datasets:
         #     text += f'[{key}] {definition} '
         # text += f"[Type] {self.dataset[idx][0]} [Context] {context} "
         
-        if self.model_name == 'Mt0' or self.model_name == 'flant5' or self.model_name == 'gemma' :
+        if self.model_name == 'Mt0' or self.model_name == 'gemma':
             text = f"Please utilize the provided context to generate {self.tagging_type} 1 "
             for i in range(1, len(story_list)):
                 text += f"and {self.tagging_type} {i+1} "
             text += f"key information for this context [Context] {context} [END]"
-        elif self.model_name == 'T5' or self.model_name == 'Bart':
+        elif self.model_name == 'T5' or self.model_name == 'Bart' or self.model_name == 'flant5':
             text = f"[Context] {context} [END]"
         elif self.model_name == 'roberta':
             question = f'What {self.tagging_type} key information is included in this context and explain their subjects, objects, and their possible types?'
@@ -196,10 +196,10 @@ class Question_Datasets:
     def create_input(self, story_list):
         context = self.dataset[story_list[0]][1]
         
-        if self.model_name == 'Mt0' or self.model_name == 'flant5' or self.model_name == 'gemma':
+        if self.model_name == 'Mt0' or self.model_name == 'gemma':
             text = f"Please utilize the provided context and key information to generate question for this context "
             text += f'[Context] {context} '
-        elif self.model_name == 'T5' or self.model_name == 'Bart' or self.model_name == 'roberta':
+        elif self.model_name == 'T5' or self.model_name == 'Bart' or self.model_name == 'roberta' or self.model_name == 'flant5':
             text = f'[Context] {context} '
 
 

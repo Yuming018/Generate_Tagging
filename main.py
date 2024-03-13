@@ -1,5 +1,5 @@
 from dataloader import Tagging_Datasets, Question_Datasets
-from model import Mt0, T5, Bart, roberta, gemma, flant5
+from model import create_model
 from training import train_model, training
 from inference import inference
 from helper import checkdir
@@ -20,19 +20,9 @@ def main(batch_size = 4,
     if Generation == 'tagging' :
         print('Tagging : ', event_or_relation)
     print('Generation : ', Generation)
-    print('Model name :', model_name, '\n')
 
-    create_model = {
-        "Mt0" : Mt0(),
-        "T5" : T5(),
-        "flant5" : flant5(),
-        "Bart" : Bart(),
-        "roberta" : roberta(),
-        "gemma" : gemma(),
-    }
-
-    model, tokenizer = create_model[model_name]
-    model = model.to(device)
+    model, tokenizer = create_model(model_name)
+    model.to(device)
 
     path_save_model = checkdir(path_save_model, event_or_relation, Generation, model_name)
     if Generation == 'tagging' :

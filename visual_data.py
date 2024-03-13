@@ -109,7 +109,12 @@ def visualize(title, vis_data, count_data):
     print('min :', count_data.most_common()[-1])
     print('max :', count_data.most_common()[0], '\n')
 
-    return Counter(count_data.values())
+    dic = dict()
+    total = sum(Counter(count_data.values()).values())
+    for key, val in Counter(count_data.values()).items():
+        dic[key] = round(val / total, 2) 
+
+    return dic
 
 def display_histogram(event_or_relation, train_data, valid_data, test_data):
     train_keys, train_values = list(train_data.keys()), list(train_data.values())
@@ -126,13 +131,13 @@ def display_histogram(event_or_relation, train_data, valid_data, test_data):
     plt.bar([key + bar_width for key in test_keys], test_values, width=bar_width, color=color_test, label='Test data', edgecolor='black')
 
     for i, value in enumerate(train_values):
-        plt.text(train_keys[i] - bar_width, value + 0.1, str(value), ha='center', va='bottom', color=color_train)
+        plt.text(train_keys[i] - bar_width, value , str(value), ha='center', va='bottom', color=color_train)
 
     for i, value in enumerate(valid_values):
-        plt.text(valid_keys[i], value + 0.1, str(value), ha='center', va='bottom', color=color_valid)
+        plt.text(valid_keys[i], value + 0.025, str(value), ha='center', va='bottom', color=color_valid)
 
     for i, value in enumerate(test_values):
-        plt.text(test_keys[i] + bar_width, value + 0.1, str(value), ha='center', va='bottom', color=color_test)
+        plt.text(test_keys[i] + bar_width, value, str(value), ha='center', va='bottom', color=color_test)
     
     x_ticks = list(range(1, max(max(train_keys), max(valid_keys), max(test_keys)) + 1))
     plt.xticks(x_ticks)

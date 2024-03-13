@@ -31,12 +31,13 @@ def inference(model_name, model, tokenizer, test_dataloader, test_data_paprgraph
         # no_repeat_ngram_size=3,
         top_k=4, 
         temperature=0.5,
-        max_new_tokens=256,
+        max_new_tokens=512,
     )
 
     prediction, target, context, paragraph = [], [], [], []
     # model.load_state_dict(torch.load(best_pth))
-    model.half()
+    if model_name == 'gemma':
+        model.half()
     model.to(device)
     model.eval()
     for data, para in tqdm(zip(test_dataloader, test_data_paprgraph)):
@@ -44,6 +45,7 @@ def inference(model_name, model, tokenizer, test_dataloader, test_data_paprgraph
         input_ids = torch.tensor(input_ids).to(device)
         output = model.generate(input_ids=input_ids.unsqueeze(0), generation_config=tagging_generation_config)
         prediction.append(tokenizer.decode(output[0], skip_special_tokens=True))
+        # print(tokenizer.decode(output[0], skip_special_tokens=True))
         target.append(tokenizer.decode(label, skip_special_tokens=True))
         context.append(tokenizer.decode(input_ids, skip_special_tokens=True))
         paragraph.append(para)
