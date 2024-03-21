@@ -15,7 +15,8 @@ def read_data(path):
     return data.values
 
 def save_csv(dataset, path):
-    row_1 = ['ID', "Story", "Question_predict", "Question_target", "BLEU-1", "BLEU-2", "BLEU-3", "BLEU-4", "Sentence_Bert_Score"]
+
+    row_1 = ["Story", "Content", "Question_predict", "Question_target", "BLEU-1", "BLEU-2", "BLEU-3", "BLEU-4", "Sentence_Bert_Score", "Overlap score"]
     with open(path, 'w', newline = '', encoding='utf-8') as csvfile:
         writer = csv.writer(csvfile, delimiter = ',')
         writer.writerow(row_1)
@@ -26,7 +27,7 @@ class eval_Realtion:
     def __init__(self, path) -> None:
         self.pred_dict, self.tar_dict = defaultdict(defaultdict), defaultdict(defaultdict)
         self.dataset = read_data(path)
-        self.label = [['X attribute'], ['X intent', 'X reaction', 'Other reaction'], ['isBefore', 'the same', 'isAfter', 'X need', 'Effect on X',  'X want', 'Other want', 'Effect on other']]
+        self.label = [['Other'], ['X attribute'], ['X intent', 'X reaction', 'Other reaction'], ['isBefore', 'the same', 'isAfter', 'X need', 'Effect on X',  'X want', 'Other want', 'Effect on other']]
         self.process_data()
 
     def process_data(self):
@@ -43,13 +44,12 @@ class eval_Realtion:
         pred, true = [], []
         for key in tqdm(self.pred_dict):
             for idx in range(len(self.label)):
-                pred_type = self.pred_dict[key]['Relation'].split(' - ')[1]
-                tar_type = self.tar_dict[key]['Relation'].split(' - ')[1]
+                pred_type = self.pred_dict[key]['Relation 1'].split(' - ')[1]
+                tar_type = self.tar_dict[key]['Relation 1'].split(' - ')[1]
                 if pred_type[:-1] in self.label[idx]:
                     pred.append(idx+1)
                 if tar_type[:-1] in self.label[idx]:
                     true.append(idx+1)
-        print(len(true), len(pred))
         precision = precision_score(true, pred, average='micro')
         recall = recall_score(true, pred, average='micro')
         f1_s = f1_score(true, pred, average='micro')
@@ -62,32 +62,34 @@ class eval_Realtion:
     def bleu_eval(self):
         record = []
         bleu_score = [0, 0, 0, 0]
-        keys_to_check = ['Relation', 'Event1', 'Event2']
-        for key in tqdm(self.pred_dict):
-            pred = self.pred_dict[key]
-            tar = self.tar_dict[key]
+        keys_to_check = ['Relation 1', 'Event1', 'Event2']
+        for idx in tqdm(self.pred_dict):
+            pred = self.pred_dict[idx]
+            tar = self.tar_dict[idx]
             if not all(key in pred for key in keys_to_check) or not all(key in tar for key in keys_to_check):
                 continue
+            if not pred['Event1'].replace(' ', "") or not pred['Event2'].replace(' ', ""):
+                continue
             pred_label, true_label = 0, 0
-            for idx in range(len(self.label)):
-                pred_type = self.pred_dict[key]['Relation'].split(' - ')[1]
-                tar_type = self.tar_dict[key]['Relation'].split(' - ')[1]
-                if pred_type[:-1] in self.label[idx]:
-                    pred_label = idx+1
-                if tar_type[:-1] in self.label[idx]:
-                    true_label = idx+1
-            if pred_label == true_label:
-                result, result2 = self.cal_result(pred, tar)
-                bleu_1 = (round(result['precisions'][0], 2) + round(result2['precisions'][0], 2)) / 2
-                bleu_2 = (round(result['precisions'][1], 2) + round(result2['precisions'][1], 2)) / 2
-                bleu_3 = (round(result['precisions'][2], 2) + round(result2['precisions'][2], 2)) / 2
-                bleu_4 = (round(result['precisions'][3], 2) + round(result2['precisions'][3], 2)) / 2
-                data = np.concatenate((pred['data'], [bleu_1, bleu_2, bleu_3, bleu_4]))
-                bleu_score[0] += bleu_1
-                bleu_score[1] += bleu_2
-                bleu_score[2] += bleu_3
-                bleu_score[3] += bleu_4
-                record.append(data)
+            for label_idx in range(len(self.label)):
+                pred_type = self.pred_dict[idx]['Relation 1'].split(' - ')[1]
+                tar_type = self.tar_dict[idx]['Relation 1'].split(' - ')[1]
+                if pred_type[:-1] in self.label[label_idx]:
+                    pred_label = label_idx+1
+                if tar_type[:-1] in self.label[label_idx]:
+                    true_label = label_idx+1
+            # if pred_label == true_label:
+            result, result2 = self.cal_result(pred, tar)
+            bleu_1 = (round(result['precisions'][0], 2) + round(result2['precisions'][0], 2)) / 2
+            bleu_2 = (round(result['precisions'][1], 2) + round(result2['precisions'][1], 2)) / 2
+            bleu_3 = (round(result['precisions'][2], 2) + round(result2['precisions'][2], 2)) / 2
+            bleu_4 = (round(result['precisions'][3], 2) + round(result2['precisions'][3], 2)) / 2
+            data = np.concatenate((pred['data'], [bleu_1, bleu_2, bleu_3, bleu_4]))
+            bleu_score[0] += bleu_1
+            bleu_score[1] += bleu_2
+            bleu_score[2] += bleu_3
+            bleu_score[3] += bleu_4
+            record.append(data)
             # else:
             #     data = np.concatenate((pred['data'], [0, 0, 0, 0]))
             
@@ -103,19 +105,78 @@ class eval_Realtion:
         else:
             return result3, result4
 
-    def SentenceTransformer_eval(self, dataset):
-        record = []
-        score = 0
+    def Sentence_Overlap_eval(self, record):
+        # print(len(record))
+        keys_to_check = ['Relation 1', 'Event1', 'Event2']
+        sent_score, overlap_score, count = 0, 0, 0
+        for idx in tqdm(self.pred_dict):
+            pred = self.pred_dict[idx]
+            tar = self.tar_dict[idx]
+            if not all(key in pred for key in keys_to_check) or not all(key in tar for key in keys_to_check):
+                continue
+            if not pred['Event1'].replace(' ', "") or not pred['Event2'].replace(' ', ""):
+                continue
+            """
+            計算 senteceTransformer score
+            """
+            result = self.cal_sentence(pred, tar)
+            sent_score += result
+            record[count] = np.append(record[count], result)
+            
+            """
+            計算 overlap ration score
+            """
+            result = self.cal_overlap(pred, tar)
+            overlap_score += result
+            record[count] = np.append(record[count], result)
+
+            count += 1
+            
+        return record, sent_score, overlap_score
+
+    def cal_sentence(self, pred_dict, tar_dict):
         model = SentenceTransformer('multi-qa-MiniLM-L6-cos-v1')
-        for data in tqdm(dataset):
-            pred, tar =  data[2], data[3]
-            query_embedding = model.encode(pred)
-            passage_embedding = model.encode(tar)
-            result = util.dot_score(query_embedding, passage_embedding)
-            data = np.concatenate((data, [round(result[0][0].item(), 2)]))
-            score += round(result[0][0].item(), 2)
-            record.append(data)
-        return record, score
+        query_embedding_1 = model.encode(pred_dict['Event1'])
+        passage_embedding_1 = model.encode(tar_dict['Event1'])
+        query_embedding_2 = model.encode(pred_dict['Event2'])
+        passage_embedding_2 = model.encode(tar_dict['Event2'])
+
+        result = util.dot_score(query_embedding_1, passage_embedding_1)
+        result2 = util.dot_score(query_embedding_1, passage_embedding_2)
+        result3 = util.dot_score(query_embedding_2, passage_embedding_1)
+        result4 = util.dot_score(query_embedding_2, passage_embedding_2)
+
+        return max(round(result[0][0].item(), 2) + round(result4[0][0].item(), 2), round(result2[0][0].item(), 2) + round(result3[0][0].item(), 2)) /2
+
+    def cal_overlap(self, pred_dict, tar_dict):
+        lcs_length = self.longest_common_subsequence(pred_dict['Event1'], tar_dict['Event1'])
+        lcs_length_2 = self.longest_common_subsequence(pred_dict['Event1'], tar_dict['Event2'])
+        lcs_length_3 = self.longest_common_subsequence(pred_dict['Event2'], tar_dict['Event1'])
+        lcs_length_4 = self.longest_common_subsequence(pred_dict['Event2'], tar_dict['Event2'])
+
+        overlap_ratio   = lcs_length   / (len(pred_dict['Event1']) + len(tar_dict['Event1']) - lcs_length)
+        overlap_ratio_2 = lcs_length_2 / (len(pred_dict['Event1']) + len(tar_dict['Event2']) - lcs_length_2)
+        overlap_ratio_3 = lcs_length_3 / (len(pred_dict['Event2']) + len(tar_dict['Event1']) - lcs_length_3)
+        overlap_ratio_4 = lcs_length_4 / (len(pred_dict['Event2']) + len(tar_dict['Event2']) - lcs_length_4)
+
+        return max(round(overlap_ratio, 2) + round(overlap_ratio_4, 2), round(overlap_ratio_2, 2) + round(overlap_ratio_3, 2)) /2
+
+    def longest_common_subsequence(self, pred, tar):
+        m = len(pred)
+        n = len(tar)
+        # Create a table to store lengths of LCS
+        lcs_table = [[0] * (n + 1) for _ in range(m + 1)]
+
+        # Building the LCS table
+        for i in range(1, m + 1):
+            for j in range(1, n + 1):
+                if pred[i - 1] == tar[j - 1]:
+                    lcs_table[i][j] = lcs_table[i - 1][j - 1] + 1
+                else:
+                    lcs_table[i][j] = max(lcs_table[i - 1][j], lcs_table[i][j - 1])
+
+        # Length of LCS is the value at the bottom-right cell of the table
+        return lcs_table[m][n]
     
 class eval_Event:
     def __init__(self, path) -> None:
@@ -125,11 +186,11 @@ class eval_Event:
                        'Emotion' : 'Emotion_Type'}
         self.dataset = read_data(path)
         self.process_data()
-        # print(self.all_type_dict)
 
     def process_data(self):
         type_idx = 0
         for idx, data in tqdm(enumerate(self.dataset)):
+            
             pred, tar =  data[2], data[3]
             pred = pred.split('[')[1:-1]
             tar = tar.split('[')[1:-1]
@@ -177,7 +238,7 @@ class eval_Event:
                                 bleu_score = result['precisions'][min(4, entity_len)-1]
                                 max_type = p_key
                     
-                    if bleu_score > 0.8:
+                    if bleu_score == 1:
                         if max_type in self.repeat_label:
                             max_type = self.repeat_label[max_type]
                         if key in self.repeat_label:
@@ -197,7 +258,7 @@ class eval_Event:
                                 bleu_score = result['precisions'][min(4, entity_len)-1]
                                 max_type = t_key
                     
-                    if bleu_score > 0.8:
+                    if bleu_score == 1:
                         if max_type in self.repeat_label:
                             max_type = self.repeat_label[max_type]
                         if key in self.repeat_label:
@@ -218,9 +279,9 @@ class eval_Event:
         else:
             f1_c = 0
         
+        
         # get results identification
         gold_arg_n, pred_arg_n, pred_in_gold_n, gold_in_pred_n = 0, 0, 0, 0
-        keys_to_check = ['data', 'Event']
         for idx in tqdm(self.pred_dict):
             predict = self.pred_dict[idx]
             tar = self.tar_dict[idx]
@@ -244,7 +305,7 @@ class eval_Event:
                             if result['precisions'][min(4, entity_len)-1] > bleu_score:
                                 bleu_score = result['precisions'][min(4, entity_len)-1]
                     
-                    if bleu_score > 0.8:
+                    if bleu_score == 1:
                         gold_in_pred_n += 1
             
             for key, entity in predict.items():
@@ -258,7 +319,7 @@ class eval_Event:
                             if result['precisions'][min(4, entity_len)-1] > bleu_score:
                                 bleu_score = result['precisions'][min(4, entity_len)-1]
                     
-                    if bleu_score > 0.8:
+                    if bleu_score == 1:
                         pred_in_gold_n += 1
 
         if pred_arg_n != 0:
@@ -274,24 +335,8 @@ class eval_Event:
         else:
             f1_i = 0
         
-        print('f1_c : ', f1_c)
-        print('f1_i : ', f1_i)
-        # input()
-                
-    def SentenceTransformer_eval(self):
-        record = []
-        score = 0
-        model = SentenceTransformer('multi-qa-MiniLM-L6-cos-v1')
-        for data in tqdm(self.dataset):
-            pred, tar =  data[2], data[3]
-            query_embedding = model.encode(pred)
-            passage_embedding = model.encode(tar)
-            result = util.dot_score(query_embedding, passage_embedding)
-            data = np.concatenate((data, [round(result[0][0].item(), 2)]))
-            score += round(result[0][0].item(), 2)
-            record.append(data)
-        return record, score
-
+        return f1_i, f1_c
+         
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--Type', '-t',
@@ -315,18 +360,21 @@ if __name__ == '__main__':
     path = f'save_model/{args.Type}/{args.Generation}/{args.Model}/'
     if args.Type == 'Event':
         eval = eval_Event(path + f'{args.Generation}.csv')
-        eval.NER_eval()
-        record, s_score = eval.SentenceTransformer_eval()
+        f1_i, f1_c = eval.NER_eval()
+
+        print('f1_c : ', f1_c)
+        print('f1_i : ', f1_i)   
     elif args.Type == 'Relation':
         eval = eval_Realtion(path + f'{args.Generation}.csv')
-        eval.process_label()
+        # eval.process_label()
         record, bleu_score = eval.bleu_eval()
-        record, s_score = eval.SentenceTransformer_eval(record)
+        record, s_score, o_score = eval.Sentence_Overlap_eval(record)
+        
         num = len(record)
         print("BLEU-1 : ", round(bleu_score[0]/num, 2))
         print("BLEU-2 : ", round(bleu_score[1]/num, 2))
         print("BLEU-3 : ", round(bleu_score[2]/num, 2))
         print("BLEU-4 : ", round(bleu_score[3]/num, 2))
-
-    print("SentenceTransformer : ", round(s_score/len(record), 2))
-    save_csv(record, path + 'score.csv')
+        print("SentenceTransformer : ", round(s_score/len(record), 2))
+        print("Overlap Ratio : ", round(o_score/len(record), 2))
+        save_csv(record, path + 'score.csv')
