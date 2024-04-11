@@ -54,5 +54,32 @@ def check_checkpoint(path_save_model):
     model_path = path_save_model + f'checkpoints/checkpoint-{max(checkpoints_list)}/'
     return model_path
 
+def create_prompt(model_name, tagging_type, generate_type, context):
+
+    if generate_type != 'tagging' and generate_type != 'question':
+        raise TypeError("generate_type 必須是 tagging 或者 question")
+    elif generate_type == 'tagging':
+        if tagging_type != 'Event' and tagging_type != 'Relation':
+            raise TypeError("Tagging_type 必須是 Event 或者 Relation")
+    
+    if model_name not in ['Mt0', 'gemma', 'T5', 'flant5', 'Bart', 'roberta']:
+        raise ValueError("Model name 不存在")
+
+    if generate_type == 'tagging':
+        if model_name == 'Mt0' or model_name == 'gemma':
+            text = f"Please utilize the provided context to generate {tagging_type} 1 key information for this context [Context] {context} [END]"
+        elif model_name == 'T5' or model_name == 'flant5' or model_name == 'Bart':
+            text = f"[Context] {context} [END]"
+        elif model_name == 'roberta':
+            question = f'What {tagging_type} key information is included in this context and explain their subjects, objects, and their possible types?'
+            text = (question, context)
+    elif generate_type == 'question':
+        if model_name == 'Mt0' or model_name == 'gemma':
+            text = f"Please utilize the provided context and key information to generate question for this context [Context] {context} "
+        elif model_name == 'T5' or model_name == 'flant5'  or model_name == 'Bart' or model_name == 'roberta':
+            text = f"[Context] {context} "
+    
+    return text
+
 if __name__ == '__main__':
     pass

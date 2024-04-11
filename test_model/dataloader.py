@@ -1,15 +1,13 @@
-from transformers import AutoTokenizer
 from helper import enconder
 import pandas as pd
-import numpy as np
 import re
 
 class Dataset:
-    def __init__(self, path, model_name) -> None:
+    def __init__(self, path, tokenizer) -> None:
         self.max_len = 512
-        self.tokenizer = AutoTokenizer.from_pretrained(model_name, do_lower_case=True)
+        self.tokenizer = tokenizer
         self.dataset = self.get_data(path)
-        self.context_type, self.context, self.focus_context, self.target = [], [], [] ,[]
+        self.context_type, self.paragraph, self.context, self.focus_context, self.target = [], [], [] ,[], []
         self.create_dataset()
 
     def get_data(self, path):
@@ -24,6 +22,7 @@ class Dataset:
             if self.dataset[idx][4] != story_name:
                 context_type, context, focus_context = self.create_input(idx-1, story_idx)
                 self.context_type.append(context_type)
+                self.paragraph.append(self.dataset[idx-1][4])
                 self.context.append(context)
                 self.focus_context.append(focus_context)
                 self.target.append(self.create_target(idx-1))
@@ -58,7 +57,7 @@ class Dataset:
         return len(self.target)
 
     def __getitem__(self, idx):
-        return self.context_type[idx], self.context[idx], self.focus_context[idx], self.target[idx]
+        return self.context_type[idx], self.paragraph[idx], self.context[idx], self.focus_context[idx], self.target[idx]
 
 if __name__ == '__main__':
     pass

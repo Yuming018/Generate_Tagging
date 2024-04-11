@@ -1,7 +1,7 @@
 import pandas as pd
 from tqdm import tqdm
 from collections import defaultdict, Counter
-from helper import enconder, text_segmentation
+from helper import enconder, text_segmentation, create_prompt
 
 legal_tagging = ['Causal Effect',
             'Temporal',
@@ -56,8 +56,11 @@ class Tagging_Datasets:
         for idx in tqdm(range(len(self.dataset))):
             dict = {}
             tag_type = self.dataset[idx][self.index].split(' - ')[0]
-            if self.tagging_type == 'Event' or self.path == 'data/test.csv':
+            if self.tagging_type == 'Event' or self.path == 'data/train.csv':
                 if tag_type in legal_tagging:
+                    # print('Content : ', self.dataset[idx][1])
+                    # print('Question : ', self.dataset[idx][2])
+                    # print('Answer : ', self.dataset[idx][3])
                     input_ids, attention_mask = self.create_input([idx])
                     target_ids = self.create_target([idx])
                     dict['input_ids'] = input_ids
@@ -83,7 +86,7 @@ class Tagging_Datasets:
         return          
 
     def create_input(self, story_list):
-        if self.tagging_type == 'Event' or self.path == 'data/test.csv':
+        if self.tagging_type == 'Event' or self.path == 'data/train.csv':
             context = text_segmentation(self.dataset[story_list[0]])
         elif self.tagging_type == 'Relation':
             context = self.dataset[story_list[0]][1]
@@ -91,22 +94,9 @@ class Tagging_Datasets:
         #     text += f'[{key}] {definition} '
         # text += f"[Type] {self.dataset[idx][0]} [Context] {context} "
         
-        if self.model_name == 'Mt0' or self.model_name == 'gemma':
-            text = f"Please utilize the provided context to generate {self.tagging_type} 1 "
-            for i in range(1, len(story_list)):
-                text += f"and {self.tagging_type} {i+1} "
-            text += f"key information for this context [Context] {context} [END]"
-        elif self.model_name == 'T5' or self.model_name == 'Bart' or self.model_name == 'flant5':
-            text = f"[Context] {context} [END]"
-        elif self.model_name == 'roberta':
-            question = f'What {self.tagging_type} key information is included in this context and explain their subjects, objects, and their possible types?'
-            text = (question, context)
-        
-        if self.model_name == 'gemma':
-            if self.tagging_type == 'Event':
-                text += '[Example] Input : one day the whole fish tribe came back, output format: "[Event 1] Action - Action Verb [Actor] the whole fish tribe [Time] one day [Trigger_Word] came back"'
-        
+        text = create_prompt(self.model_name, self.tagging_type, 'tagging', context)
         encoded_sent = enconder(self.tokenizer, self.max_len, text = text)
+        print(text)
         # print(encoded_sent.get('input_ids'))
         # print(self.tokenizer.decode(encoded_sent.get('input_ids'), skip_special_tokens=True))  
         # input()     
@@ -143,7 +133,8 @@ class Tagging_Datasets:
                         temp = " ".join(self.dataset[story_idx][i][:left_parenthesis_index].split(' - ')[1:])
                         text += f"[{self.dataset[story_idx][i][:left_parenthesis_index].split(' - ')[0]}] {temp} "
         text += " [END]"
-
+        print(text)
+        input()
         encoded_sent = enconder(self.tokenizer, self.max_len, text = text)
         # print(encoded_sent.get('input_ids'))
         # print(self.tokenizer.decode(encoded_sent.get('input_ids'), skip_special_tokens=True))
@@ -199,14 +190,9 @@ class Question_Datasets:
         return          
 
     def create_input(self, story_list, story_name):
-        context = self.dataset[story_list[0]][1]
-        
-        if self.model_name == 'Mt0' or self.model_name == 'gemma':
-            text = f"Please utilize the provided context and key information to generate question for this context "
-            text += f'[Context] {context} '
-        elif self.model_name == 'T5' or self.model_name == 'Bart' or self.model_name == 'roberta' or self.model_name == 'flant5':
-            text = f'[Context] {context} '
 
+        context = self.dataset[story_list[0]][1]
+        text = create_prompt(self.model_name, None, 'question', context)
 
         if self.path == 'data/test.csv':
             while self.event_idx < len(self.Evnet_tagging) and self.Evnet_tagging[self.event_idx][0] == story_name:

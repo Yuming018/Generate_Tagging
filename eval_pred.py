@@ -26,6 +26,7 @@ def save_csv(dataset, path):
 class eval_Realtion:
     def __init__(self, path) -> None:
         self.pred_dict, self.tar_dict = defaultdict(defaultdict), defaultdict(defaultdict)
+        self.content = []
         self.dataset = read_data(path)
         self.label = [['Other'], ['X attribute'], ['X intent', 'X reaction', 'Other reaction'], ['isBefore', 'the same', 'isAfter', 'X need', 'Effect on X',  'X want', 'Other want', 'Effect on other']]
         self.process_data()
@@ -33,9 +34,12 @@ class eval_Realtion:
     def process_data(self):
         for idx, data in tqdm(enumerate(self.dataset)):
             pred, tar =  data[2], data[3]
+            if '[END]' not in pred:
+                pred += '[END]'
+            pred = pred.replace('\n', '')
             pred = pred.split('[')[1:-1]
             tar = tar.split('[')[1:-1]
-            self.pred_dict[idx]['data'] = data
+            self.content.append(data)
             for p, t in zip(pred, tar):
                 self.pred_dict[idx][p.split(']')[0]] = p.split(']')[1]
                 self.tar_dict[idx][t.split(']')[0]] = t.split(']')[1]
@@ -70,28 +74,28 @@ class eval_Realtion:
                 continue
             if not pred['Event1'].replace(' ', "") or not pred['Event2'].replace(' ', ""):
                 continue
-            pred_label, true_label = 0, 0
-            for label_idx in range(len(self.label)):
-                pred_type = self.pred_dict[idx]['Relation 1'].split(' - ')[1]
-                tar_type = self.tar_dict[idx]['Relation 1'].split(' - ')[1]
-                if pred_type[:-1] in self.label[label_idx]:
-                    pred_label = label_idx+1
-                if tar_type[:-1] in self.label[label_idx]:
-                    true_label = label_idx+1
+            # pred_label, true_label = 0, 0
+            # for label_idx in range(len(self.label)):
+            #     pred_type = self.pred_dict[idx]['Relation 1'].split(' - ')[1]
+            #     tar_type = self.tar_dict[idx]['Relation 1'].split(' - ')[1]
+            #     if pred_type[:-1] in self.label[label_idx]:
+            #         pred_label = label_idx+1
+            #     if tar_type[:-1] in self.label[label_idx]:
+            #         true_label = label_idx+1
             # if pred_label == true_label:
             result, result2 = self.cal_result(pred, tar)
             bleu_1 = (round(result['precisions'][0], 2) + round(result2['precisions'][0], 2)) / 2
             bleu_2 = (round(result['precisions'][1], 2) + round(result2['precisions'][1], 2)) / 2
             bleu_3 = (round(result['precisions'][2], 2) + round(result2['precisions'][2], 2)) / 2
             bleu_4 = (round(result['precisions'][3], 2) + round(result2['precisions'][3], 2)) / 2
-            data = np.concatenate((pred['data'], [bleu_1, bleu_2, bleu_3, bleu_4]))
+            data = np.concatenate((self.content[idx], [bleu_1, bleu_2, bleu_3, bleu_4]))
             bleu_score[0] += bleu_1
             bleu_score[1] += bleu_2
             bleu_score[2] += bleu_3
             bleu_score[3] += bleu_4
             record.append(data)
             # else:
-            #     data = np.concatenate((pred['data'], [0, 0, 0, 0]))
+            #     data = np.concatenate((self.content[idx], [0, 0, 0, 0]))
             
         return record, bleu_score
     
@@ -116,6 +120,7 @@ class eval_Realtion:
                 continue
             if not pred['Event1'].replace(' ', "") or not pred['Event2'].replace(' ', ""):
                 continue
+            
             """
             計算 senteceTransformer score
             """
@@ -181,6 +186,7 @@ class eval_Realtion:
 class eval_Event:
     def __init__(self, path) -> None:
         self.pred_dict, self.tar_dict = defaultdict(defaultdict), defaultdict(defaultdict)
+        self.content = []
         self.all_type_dict = dict()
         self.repeat_label = { 'Trigger_Word' : 'Trigger_word',
                        'Emotion' : 'Emotion_Type'}
@@ -192,15 +198,23 @@ class eval_Event:
         for idx, data in tqdm(enumerate(self.dataset)):
             
             pred, tar =  data[2], data[3]
-            pred = pred.split('[')[1:-1]
+            if not isinstance(pred, float):
+                if '[END]' not in pred:
+                    pred += '[END]'
+                pred = pred.replace('\n', '')
+                pred = pred.split('[')[1:-1]
+            else:
+                pred = []
             tar = tar.split('[')[1:-1]
-            self.pred_dict[idx]['data'] = data
+            self.content.append(data)
             for p in pred:
                 label = p.split(']')[0]
-                if label != 'Event' and label not in self.repeat_label and label not in self.all_type_dict:
+                entity = p.split(']')[1]
+                if label != 'Event' and label not in self.repeat_label and label not in self.all_type_dict and entity != "":
                     self.all_type_dict[label] = type_idx
                     type_idx += 1
-                self.pred_dict[idx][label] = p.split(']')[1]
+                if entity.replace(' ', '') != '':
+                    self.pred_dict[idx][label] = p.split(']')[1]
             for t in tar:
                 label = t.split(']')[0]
                 if label != 'Event' and label not in self.repeat_label and label not in self.all_type_dict:
@@ -233,6 +247,7 @@ class eval_Event:
                     
                     for p_key, p_entity in predict.items():
                         if p_key not in keys_to_check:
+                            # print(entity, p_entity)
                             result = metric.compute(predictions=[entity], references=[p_entity])
                             if result['precisions'][min(4, entity_len)-1] > bleu_score:
                                 bleu_score = result['precisions'][min(4, entity_len)-1]
@@ -348,7 +363,7 @@ if __name__ == '__main__':
                         type=str,
                         default='tagging')
     parser.add_argument('--Model', '-m',
-                        choices=['Mt0', 'T5', 'Bart', 'roberta', 'gemma', 'flant5'],
+                        choices=['Mt0', 'T5', 'Bart', 'roberta', 'gemma', 'flant5', 'gemini', 'openai'],
                         type=str,
                         default='Mt0')
     args = parser.parse_args()
@@ -370,11 +385,12 @@ if __name__ == '__main__':
         record, bleu_score = eval.bleu_eval()
         record, s_score, o_score = eval.Sentence_Overlap_eval(record)
         
-        num = len(record)
+        num = len(eval.dataset)
+        print(num)
         print("BLEU-1 : ", round(bleu_score[0]/num, 2))
         print("BLEU-2 : ", round(bleu_score[1]/num, 2))
         print("BLEU-3 : ", round(bleu_score[2]/num, 2))
         print("BLEU-4 : ", round(bleu_score[3]/num, 2))
-        print("SentenceTransformer : ", round(s_score/len(record), 2))
-        print("Overlap Ratio : ", round(o_score/len(record), 2))
+        print("Overlap Ratio : ", round(o_score/num, 2))
+        print("SentenceTransformer : ", round(s_score/num, 2))
         save_csv(record, path + 'score.csv')

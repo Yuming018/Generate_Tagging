@@ -1,7 +1,6 @@
 from helper import check_checkpoint
 from peft import PeftConfig, PeftModel
-from transformers import GenerationConfig, AutoModelForSeq2SeqLM
-
+from transformers import GenerationConfig, AutoModelForSeq2SeqLM, AutoModelForCausalLM
 
 def create_generate_config(model):
     tagging_generation_config = GenerationConfig(
@@ -18,20 +17,34 @@ def create_generate_config(model):
         )
     return tagging_generation_config
 
-def create_tagging(path_save_model, model, input_ids):
+def set_model(model_name, model_path):
+    if model_name == "Mt0":
+        config = PeftConfig.from_pretrained(model_path)
+        model = AutoModelForSeq2SeqLM.from_pretrained(config.base_model_name_or_path)
+        model = PeftModel.from_pretrained(model, model_path)
+    elif model_name == 'T5' or model_name == 'Bart' or model_name == 'flant5' :
+        model = AutoModelForSeq2SeqLM.from_pretrained(model_path)
+    elif model_name == 'roberta':
+        model = AutoModelForCausalLM.from_pretrained(model_path)
+    elif model_name == 'gemma':
+        config = PeftConfig.from_pretrained(model_path)
+        model = AutoModelForCausalLM.from_pretrained(config.base_model_name_or_path)
+        model = PeftModel.from_pretrained(model, model_path)
+    
+    return model
+
+def create_tagging(path_save_model, model_name, input_ids, device):
     model_path = check_checkpoint(path_save_model)
-    config = PeftConfig.from_pretrained(model_path)
-    model = AutoModelForSeq2SeqLM.from_pretrained(config.base_model_name_or_path, device_map={"":0})
-    model = PeftModel.from_pretrained(model, model_path, device_map={"":0})
+    model = set_model(model_name, model_path).to(device)
+
     tagging_generation_config = create_generate_config(model)
     output = model.generate(input_ids=input_ids.unsqueeze(0), generation_config=tagging_generation_config)
     return output[0]
 
-def create_question(path_save_model, model, input_ids):
+def create_question(path_save_model, model_name, input_ids, device):
     model_path = check_checkpoint(path_save_model)
-    config = PeftConfig.from_pretrained(model_path)
-    model = AutoModelForSeq2SeqLM.from_pretrained(config.base_model_name_or_path, device_map={"":0})
-    model = PeftModel.from_pretrained(model, model_path, device_map={"":0})
+    model = set_model(model_name, model_path).to(device)
+
     tagging_generation_config = create_generate_config(model)
     output = model.generate(input_ids=input_ids.unsqueeze(0), generation_config=tagging_generation_config)
     return output[0]
