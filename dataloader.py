@@ -29,7 +29,7 @@ Relation_definition_2 = {
     'If-Event-Then-Persona' : "Contains 'X attribute'. In addition to pre- and postconditions, Define a stative relation that describes how the subject of an event is described or perceived.",
 }
 
-class Tagging_Datasets:
+class Extraction_Datasets:
     def __init__(self, path, model_name, tokenizer, event_or_relation, max_len) -> None:
         self.path = path
         self.max_len = max_len
@@ -58,9 +58,6 @@ class Tagging_Datasets:
             tag_type = self.dataset[idx][self.index].split(' - ')[0]
             if self.tagging_type == 'Event' or self.path == 'data/train.csv':
                 if tag_type in legal_tagging:
-                    # print('Content : ', self.dataset[idx][1])
-                    # print('Question : ', self.dataset[idx][2])
-                    # print('Answer : ', self.dataset[idx][3])
                     input_ids, attention_mask = self.create_input([idx])
                     target_ids = self.create_target([idx])
                     dict['input_ids'] = input_ids
@@ -90,13 +87,9 @@ class Tagging_Datasets:
             context = text_segmentation(self.dataset[story_list[0]])
         elif self.tagging_type == 'Relation':
             context = self.dataset[story_list[0]][1]
-        # for key, definition in Relation_definition_2.items():
-        #     text += f'[{key}] {definition} '
-        # text += f"[Type] {self.dataset[idx][0]} [Context] {context} "
         
         text = create_prompt(self.model_name, self.tagging_type, 'tagging', context)
         encoded_sent = enconder(self.tokenizer, self.max_len, text = text)
-        print(text)
         # print(encoded_sent.get('input_ids'))
         # print(self.tokenizer.decode(encoded_sent.get('input_ids'), skip_special_tokens=True))  
         # input()     
@@ -128,13 +121,9 @@ class Tagging_Datasets:
                     elif self.tagging_type == 'Relation' and i == 8:
                         text += " [Event2] " + "".join(self.dataset[story_idx][i][:left_parenthesis_index])
                     elif self.tagging_type == 'Event':
-                        # text += " [Arg] " + "".join(self.dataset[story_idx][i][:left_parenthesis_index])
-                        # self.temp[self.dataset[story_idx][self.index].split(' - ')[0]][self.dataset[story_idx][i][:left_parenthesis_index].split(' - ')[0]] = 1
                         temp = " ".join(self.dataset[story_idx][i][:left_parenthesis_index].split(' - ')[1:])
                         text += f"[{self.dataset[story_idx][i][:left_parenthesis_index].split(' - ')[0]}] {temp} "
         text += " [END]"
-        print(text)
-        input()
         encoded_sent = enconder(self.tokenizer, self.max_len, text = text)
         # print(encoded_sent.get('input_ids'))
         # print(self.tokenizer.decode(encoded_sent.get('input_ids'), skip_special_tokens=True))
@@ -147,7 +136,7 @@ class Tagging_Datasets:
     def __getitem__(self, idx):
         return self.datasets[idx]
 
-class Question_Datasets:
+class Question_generation_Datasets:
     def __init__(self, path, model_name, tokenizer, max_len) -> None:
         self.path = path
         self.max_len = max_len
@@ -237,6 +226,55 @@ class Question_Datasets:
         # print(encoded_sent.get('input_ids'))
         # print(self.tokenizer.decode(encoded_sent.get('input_ids'), skip_special_tokens=True))
         # input()
+        return encoded_sent.get('input_ids')
+
+    def __len__(self):
+        return len(self.datasets)
+
+    def __getitem__(self, idx):
+        return self.datasets[idx]
+
+class Ranking_dataset:
+    def __init__(self, path, model_name, tokenizer, max_len) -> None:
+        self.path = path
+        self.max_len = max_len
+        self.model_name = model_name
+        self.tokenizer = tokenizer
+        self.dataset = self.get_data(path)
+        self.datasets, self.paragraph = [], []
+        self.create_dataset()  
+
+    def get_data(self, path):
+        data = pd.read_csv(path)
+        data = data.fillna('')
+        return data.values
+    
+    def create_dataset(self):
+        for idx in tqdm(range(len(self.dataset))):
+            dict = {}
+            input_ids, attention_mask = self.create_input(idx)
+            target_ids = self.create_target(idx)
+            dict['input_ids'] = input_ids
+            dict['attention_mask'] = attention_mask
+            dict['labels'] = target_ids
+            self.datasets.append(dict)
+
+        return     
+    
+    def create_input(self, idx):
+        text = create_prompt(self.model_name, None, 'ranking', self.dataset[idx][2])
+        text += f'[Question] {self.dataset[idx][3]} [END]'
+        encoded_sent = enconder(self.tokenizer, 512, text = text)
+        # print(encoded_sent.get('input_ids'))
+        # print(self.tokenizer.decode(encoded_sent.get('input_ids'), skip_special_tokens=True))   
+        # input()
+        return encoded_sent.get('input_ids'), encoded_sent.get('attention_mask')
+
+    def create_target(self, idx):
+        text = str(self.dataset[idx][5])
+        encoded_sent = enconder(self.tokenizer, 128, text = text)
+        # print(encoded_sent.get('input_ids'))
+        # print(self.tokenizer.decode(encoded_sent.get('input_ids'), skip_special_tokens=True))
         return encoded_sent.get('input_ids')
 
     def __len__(self):

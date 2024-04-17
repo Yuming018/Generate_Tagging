@@ -2,6 +2,7 @@ import sys
 sys.path.append("..") 
 from helper import enconder, text_segmentation, create_prompt
 from model import create_model
+from coreference_resolution import corf_resolution
 
 import re
 import argparse
@@ -18,7 +19,7 @@ question_keyword = {
     'what' : ['Direct Object', 'Topic(indirect)', 'Msg(Direct)', 'key', 'value', 'Topic'],
     'when' : ['Time'],
     'how' : ['Emotion', 'Trigger_Word'],
-    'why' : [],
+    # 'why' : [],
 }
 
 event_type = [
@@ -66,57 +67,45 @@ def create_knowledge_graph(context_type, context, core_context, target, tokenize
 
     Event_graph, Relation_graph = defaultdict(defaultdict), defaultdict(defaultdict)
 
-    # print('Event')
-    # for idx in tqdm(range(len(new_lines))):
-    #     temp_context = new_lines[idx]
-    #     text = create_prompt(model_name, 'Event', 'tagging', temp_context)
-    #     tagging = generate_tagging(f'../save_model/Event/tagging/{model_name}/', model_name, text, tokenizer, device)
-    #     Event_graph[idx]['text'] = temp_context
-    #     # print(tagging)
-    #     for tag in tagging.split('[')[1:-1]:
-    #         key, entity = tag.split(']')
-    #         Event_graph[idx][key] = entity
+    print('Event')
+    for idx in tqdm(range(len(new_lines))):
+        temp_context = new_lines[idx]
+        text = create_prompt(model_name, 'Event', 'tagging', temp_context)
+        tagging = generate_tagging(f'../save_model/Event/tagging/{model_name}/', model_name, text, tokenizer, device)
+        Event_graph[idx]['text'] = temp_context
+        # print(tagging)
+        for tag in tagging.split('[')[1:-1]:
+            key, entity = tag.split(']')
+            Event_graph[idx][key] = entity
     
-    # print('\nRelation') 
-    # for idx in tqdm(range(len(lines) - range_para + 1)):
-    #     temp_context = ".".join(lines[idx : idx + range_para])
-    #     text = create_prompt(model_name, 'Relation', 'tagging', temp_context)
-    #     tagging = generate_tagging(f'../save_model/Relation/tagging/{model_name}/', model_name, text, tokenizer, device)
-    #     # print(temp_context)
-    #     # print(tagging)
-    #     Relation_graph[idx]['text'] = temp_context
-    #     for tag in tagging.split('[')[1:-1]:
-    #         key, entity = tag.split(']')
-    #         Relation_graph[idx][key] = entity
+    print('\nRelation') 
+    for idx in tqdm(range(len(lines) - range_para + 1)):
+        temp_context = ".".join(lines[idx : idx + range_para])
+        text = create_prompt(model_name, 'Relation', 'tagging', temp_context)
+        tagging = generate_tagging(f'../save_model/Relation/tagging/{model_name}/', model_name, text, tokenizer, device)
+        # print(temp_context)
+        # print(tagging)
+        Relation_graph[idx]['text'] = temp_context
+        for tag in tagging.split('[')[1:-1]:
+            key, entity = tag.split(']')
+            Relation_graph[idx][key] = entity
     
-    # for idx in Event_graph:
-    #     print(idx)
-    #     for key in Event_graph[idx]:
-    #         print(key, ":", Event_graph[idx][key])
+    # Event_graph = {0: defaultdict(None, {'text': '" away  away ! " barked the yard - dog ', 'Event 1': ' Action - Action Verb ', 'Actor': ' the yard dog ', 'Trigger_Word': ' barked '}), 1: defaultdict(None, {'text': ' " i \'ll tell you ; they said i was a pretty little fellow once ', 'Event 1': ' Action - Direct Speech Act ', 'Msg (Direct)': ' i was a pretty little fellow once ', 'Speaker': ' they ', 'Trigger_Word': ' said '}), 2: defaultdict(None, {'text': ' then i used to lie in a velvet - covered chair ', 'Event 1': ' Action - Action Verb ', 'Actor': ' i ', 'Direct Object': ' a velvet covered chair ', 'Trigger_Word': ' used to lie in '}), 3: defaultdict(None, {'text': " up at the master 's house  and sit in the mistress 's lap ", 'Event 1': ' Action - Action Verb ', 'Actor': " the mistress's lap ", 'Trigger_Word': ' sit in '}), 4: defaultdict(None, {'text': ' they used to kiss my nose  and wipe my paws with an embroidered handkerchief ', 'Event 1': ' Action - Action Verb ', 'Actor': ' they ', 'Direct Object': ' my nose and wipe my paws with an embroidered handkerchief ', 'Trigger_Word': ' used to kiss '}), 5: defaultdict(None, {'text': " and i was called ' ami  dear ami ", 'Event 1': ' State - Characteristic ', 'Entity': ' i ', 'Key': ' ami dear ami ', 'Trigger_Word': ' was called '}), 6: defaultdict(None, {'text': " sweet ami  ' but after a while i grew too big for them ", 'Event 1': ' Action - Action Verb ', 'Actor': ' sweet ami ', 'Direct Object': ' too big for them ', 'Trigger_Word': ' grew '}), 7: defaultdict(None, {'text': " and they sent me away to the housekeeper 's room ", 'Event 1': ' Action - Action Verb ', 'Actor': ' they ', 'Direct Object': ' me ', 'Place': " to the housekeeper's room ", 'Trigger_Word': ' sent '}), 8: defaultdict(None, {'text': ' so i came to live on the lower story ', 'Event 1': ' Action - Action Verb ', 'Actor': ' i ', 'Direct Object': ' the lower story ', 'Trigger_Word': ' came to live on '}), 9: defaultdict(None, {'text': ' you can look into the room from where you stand ', 'Event 1': ' Action - Action Verb ', 'Actor': ' you ', 'Direct Object': ' the room from where you stand ', 'Trigger_Word': ' can look into '}), 10: defaultdict(None, {'text': ' and see where i was master once  i was indeed master to the housekeeper ', 'Event 1': ' Action - Action Verb ', 'Actor': ' i ', 'Direct Object': ' to the housekeeper ', 'Trigger_Word': ' see '}), 11: defaultdict(None, {'text': ' it was certainly a smaller room than those up stairs ', 'Event 1': ' Action - Action Verb ', 'Actor': ' it ', 'Direct Object': ' a smaller room than those up stairs ', 'Trigger_Word': ' was '}), 12: defaultdict(None, {'text': ' but i was more comfortable  for i was not being continually taken hold of and pulled about by the children as i had been ', 'Event 1': ' State - Characteristic ', 'Entity': ' i ', 'Trigger_Word': ' was ', 'Value': ' more comfortable for i was not being continually taken hold of and pulled about by the children as i had been '}), 13: defaultdict(None, {'text': ' i received quite as good food  or even better ', 'Event 1': ' State - Characteristic ', 'Entity': ' i ', 'Trigger_Word': ' received ', 'Value': ' quite as good food or even better '}), 14: defaultdict(None, {'text': ' i had my own cushion  and there was a stove -- it is the finest thing in the world at this season of the year ', 'Event 1': ' Action - Action Verb ', 'Actor': ' i ', 'Direct Object': ' it is the finest thing in the world at this season of the year ', 'Trigger_Word': ' had '}), 15: defaultdict(None, {'text': ' i used to go under the stove  and lie down quite beneath it ', 'Event 1': ' Action - Action Verb ', 'Actor': ' i ', 'Direct Object': ' lie down quite beneath it ', 'Trigger_Word': ' used to '}), 16: defaultdict(None, {'text': ' ah  i still dream of that stove  away ', 'Event 1': ' Action - Action Verb ', 'Actor': ' i ', 'Direct Object': ' that stove away ', 'Trigger_Word': ' dream of '})}
+    # Relation_graph = {0: defaultdict(None, {'text': '" away . away ! " barked the yard - dog . " i \'ll tell you ; they said i was a pretty little fellow once . then i used to lie in a velvet - covered chair . up at the master \'s house . and sit in the mistress \'s lap ', 'Relation 1': ' Causal Effect - Effect on X ', 'Event1': ' i used to lie in a velvet - covered chair ', 'Event2': " up at the master's house "}), 1: defaultdict(None, {'text': ' away ! " barked the yard - dog . " i \'ll tell you ; they said i was a pretty little fellow once . then i used to lie in a velvet - covered chair . up at the master \'s house . and sit in the mistress \'s lap . they used to kiss my nose ', 'Relation 1': ' Causal Effect - X intent ', 'Event1': ' i used to lie in a velvet - covered chair ', 'Event2': " up at the master's house "}), 2: defaultdict(None, {'text': ' " i \'ll tell you ; they said i was a pretty little fellow once . then i used to lie in a velvet - covered chair . up at the master \'s house . and sit in the mistress \'s lap . they used to kiss my nose . and wipe my paws with an embroidered handkerchief ', 'Relation 1': ' Temporal - isBefore ', 'Event1': ' i used to lie in a velvet - covered chair ', 'Event2': " up at the master's house "}), 3: defaultdict(None, {'text': " then i used to lie in a velvet - covered chair . up at the master 's house . and sit in the mistress 's lap . they used to kiss my nose . and wipe my paws with an embroidered handkerchief . and i was called ' ami ", 'Relation 1': ' Temporal - isBefore ', 'Event1': ' they used to kiss my nose. and wipe my paws with an embroidered handkerchief ', 'Event2': " i was called'ami "}), 4: defaultdict(None, {'text': " up at the master 's house . and sit in the mistress 's lap . they used to kiss my nose . and wipe my paws with an embroidered handkerchief . and i was called ' ami . dear ami ", 'Relation 1': ' Causal Effect - Effect on X ', 'Event1': ' they used to kiss my nose. and wipe my paws with an embroidered handkerchief ', 'Event2': " i was called'ami "}), 5: defaultdict(None, {'text': " and sit in the mistress 's lap . they used to kiss my nose . and wipe my paws with an embroidered handkerchief . and i was called ' ami . dear ami . sweet ami ", 'Relation 1': ' Temporal - isBefore ', 'Event1': ' they used to kiss my nose ', 'Event2': ' wipe my paws with an embroidered handkerchief '}), 6: defaultdict(None, {'text': " they used to kiss my nose . and wipe my paws with an embroidered handkerchief . and i was called ' ami . dear ami . sweet ami . ' but after a while i grew too big for them ", 'Relation 1': ' Causal Effect - X intent ', 'Event1': ' they used to kiss my nose. and wipe my paws with an embroidered handkerchief ', 'Event2': ' i grew too big for them '}), 7: defaultdict(None, {'text': " and wipe my paws with an embroidered handkerchief . and i was called ' ami . dear ami . sweet ami . ' but after a while i grew too big for them . and they sent me away to the housekeeper 's room ", 'Relation 1': ' Causal Effect - X intent ', 'Event1': ' wipe my paws with an embroidered handkerchief ', 'Event2': ' i grew too big for them '}), 8: defaultdict(None, {'text': " and i was called ' ami . dear ami . sweet ami . ' but after a while i grew too big for them . and they sent me away to the housekeeper 's room . so i came to live on the lower story ", 'Relation 1': ' Causal Effect - X intent ', 'Event1': ' i grew too big for them ', 'Event2': " they sent me away to the housekeeper's room "}), 9: defaultdict(None, {'text': " dear ami . sweet ami . ' but after a while i grew too big for them . and they sent me away to the housekeeper 's room . so i came to live on the lower story . you can look into the room from where you stand ", 'Relation 1': ' Causal Effect - X intent ', 'Event1': ' i grew too big for them ', 'Event2': " they sent me away to the housekeeper's room "}), 10: defaultdict(None, {'text': " sweet ami . ' but after a while i grew too big for them . and they sent me away to the housekeeper 's room . so i came to live on the lower story . you can look into the room from where you stand . and see where i was master once ", 'Relation 1': ' Causal Effect - X intent ', 'Event1': ' i grew too big for them ', 'Event2': " they sent me away to the housekeeper's room "}), 11: defaultdict(None, {'text': " ' but after a while i grew too big for them . and they sent me away to the housekeeper 's room . so i came to live on the lower story . you can look into the room from where you stand . and see where i was master once . i was indeed master to the housekeeper ", 'Relation 1': ' Causal Effect - X intent ', 'Event1': ' i grew too big for them ', 'Event2': " they sent me away to the housekeeper's room "}), 12: defaultdict(None, {'text': " and they sent me away to the housekeeper 's room . so i came to live on the lower story . you can look into the room from where you stand . and see where i was master once . i was indeed master to the housekeeper . it was certainly a smaller room than those up stairs ", 'Relation 1': ' Causal Effect - X intent ', 'Event1': " they sent me away to the housekeeper's room ", 'Event2': ' i came to live on the lower story '}), 13: defaultdict(None, {'text': ' so i came to live on the lower story . you can look into the room from where you stand . and see where i was master once . i was indeed master to the housekeeper . it was certainly a smaller room than those up stairs . but i was more comfortable ', 'Relation 1': ' Causal Effect - X intent ', 'Event1': ' i came to live on the lower story ', 'Event2': ' you can look into the room from where you stand '}), 14: defaultdict(None, {'text': ' you can look into the room from where you stand . and see where i was master once . i was indeed master to the housekeeper . it was certainly a smaller room than those up stairs . but i was more comfortable . for i was not being continually taken hold of and pulled about by the children as i had been ', 'Relation 1': ' Causal Effect - X intent ', 'Event1': ' i was indeed master to the housekeeper ', 'Event2': ' it was certainly a smaller room than those up stairs '}), 15: defaultdict(None, {'text': ' and see where i was master once . i was indeed master to the housekeeper . it was certainly a smaller room than those up stairs . but i was more comfortable . for i was not being continually taken hold of and pulled about by the children as i had been . i received quite as good food ', 'Relation 1': ' Causal Effect - X intent ', 'Event1': ' for i was not being continually taken hold of and pulled about by the children as i had been ', 'Event2': ' i received quite as good food '}), 16: defaultdict(None, {'text': ' i was indeed master to the housekeeper . it was certainly a smaller room than those up stairs . but i was more comfortable . for i was not being continually taken hold of and pulled about by the children as i had been . i received quite as good food . or even better ', 'Relation 1': ' Causal Effect - X intent ', 'Event1': ' for i was not being continually taken hold of and pulled about by the children as i had been ', 'Event2': ' i received quite as good food '}), 17: defaultdict(None, {'text': ' it was certainly a smaller room than those up stairs . but i was more comfortable . for i was not being continually taken hold of and pulled about by the children as i had been . i received quite as good food . or even better . i had my own cushion ', 'Relation 1': ' Causal Effect - Effect on X ', 'Event1': ' i was not being continually taken hold of and pulled about by the children as i had been ', 'Event2': ' i received quite as good food '}), 18: defaultdict(None, {'text': ' but i was more comfortable . for i was not being continually taken hold of and pulled about by the children as i had been . i received quite as good food . or even better . i had my own cushion . and there was a stove -- it is the finest thing in the world at this season of the year ', 'Relation 1': ' Causal Effect - X intent ', 'Event1': ' i received quite as good food. or even better ', 'Event2': ' i had my own cushion '}), 19: defaultdict(None, {'text': ' for i was not being continually taken hold of and pulled about by the children as i had been . i received quite as good food . or even better . i had my own cushion . and there was a stove -- it is the finest thing in the world at this season of the year . i used to go under the stove ', 'Relation 1': ' Causal Effect - X intent ', 'Event1': ' for i was not being continually taken hold of and pulled about by the children as i had been ', 'Event2': ' i received quite as good food '}), 20: defaultdict(None, {'text': ' i received quite as good food . or even better . i had my own cushion . and there was a stove -- it is the finest thing in the world at this season of the year . i used to go under the stove . and lie down quite beneath it ', 'Relation 1': ' Causal Effect - X intent ', 'Event1': ' i received quite as good food ', 'Event2': ' i had my own cushion '}), 21: defaultdict(None, {'text': ' or even better . i had my own cushion . and there was a stove -- it is the finest thing in the world at this season of the year . i used to go under the stove . and lie down quite beneath it . ah ', 'Relation 1': ' Causal Effect - X intent ', 'Event1': ' there was a stove ', 'Event2': ' it is the finest thing in the world at this season of year '}), 22: defaultdict(None, {'text': ' i had my own cushion . and there was a stove -- it is the finest thing in the world at this season of the year . i used to go under the stove . and lie down quite beneath it . ah . i still dream of that stove ', 'Relation 1': ' Causal Effect - X intent ', 'Event1': ' there was a stove ', 'Event2': ' it is the finest thing in the world at this season of year '}), 23: defaultdict(None, {'text': ' and there was a stove -- it is the finest thing in the world at this season of the year . i used to go under the stove . and lie down quite beneath it . ah . i still dream of that stove . away ', 'Relation 1': ' Causal Effect - X intent ', 'Event1': ' i used to go under the stove ', 'Event2': ' and lie down quite beneath it '}), 24: defaultdict(None, {'text': ' i used to go under the stove . and lie down quite beneath it . ah . i still dream of that stove . away . away ! "', 'Relation 1': ' Temporal - isBefore ', 'Event1': ' i used to go under the stove ', 'Event2': ' and lie down quite beneath it '})}
 
-    # print(Relation_graph)
-    # for idx in Relation_graph:
-    #     print(idx)
-    #     for key in Relation_graph[idx]:
-    #         print(key, ":", Relation_graph[idx][key])
-    
-    Event_graph = {0: defaultdict(None, {'text': '" away  away ! " barked the yard - dog ', 'Event 1': ' Action - Action Verb ', 'Actor': ' the yard dog ', 'Trigger_Word': ' barked '}), 1: defaultdict(None, {'text': ' " i \'ll tell you ; they said i was a pretty little fellow once ', 'Event 1': ' Action - Direct Speech Act ', 'Msg (Direct)': ' i was a pretty little fellow once ', 'Speaker': ' they ', 'Trigger_Word': ' said '}), 2: defaultdict(None, {'text': ' then i used to lie in a velvet - covered chair ', 'Event 1': ' Action - Action Verb ', 'Actor': ' i ', 'Direct Object': ' a velvet covered chair ', 'Trigger_Word': ' used to lie in '}), 3: defaultdict(None, {'text': " up at the master 's house  and sit in the mistress 's lap ", 'Event 1': ' Action - Action Verb ', 'Actor': " the mistress's lap ", 'Trigger_Word': ' sit in '}), 4: defaultdict(None, {'text': ' they used to kiss my nose  and wipe my paws with an embroidered handkerchief ', 'Event 1': ' Action - Action Verb ', 'Actor': ' they ', 'Direct Object': ' my nose and wipe my paws with an embroidered handkerchief ', 'Trigger_Word': ' used to kiss '}), 5: defaultdict(None, {'text': " and i was called ' ami  dear ami ", 'Event 1': ' State - Characteristic ', 'Entity': ' i ', 'Key': ' ami dear ami ', 'Trigger_Word': ' was called '}), 6: defaultdict(None, {'text': " sweet ami  ' but after a while i grew too big for them ", 'Event 1': ' Action - Action Verb ', 'Actor': ' sweet ami ', 'Direct Object': ' too big for them ', 'Trigger_Word': ' grew '}), 7: defaultdict(None, {'text': " and they sent me away to the housekeeper 's room ", 'Event 1': ' Action - Action Verb ', 'Actor': ' they ', 'Direct Object': ' me ', 'Place': " to the housekeeper's room ", 'Trigger_Word': ' sent '}), 8: defaultdict(None, {'text': ' so i came to live on the lower story ', 'Event 1': ' Action - Action Verb ', 'Actor': ' i ', 'Direct Object': ' the lower story ', 'Trigger_Word': ' came to live on '}), 9: defaultdict(None, {'text': ' you can look into the room from where you stand ', 'Event 1': ' Action - Action Verb ', 'Actor': ' you ', 'Direct Object': ' the room from where you stand ', 'Trigger_Word': ' can look into '}), 10: defaultdict(None, {'text': ' and see where i was master once  i was indeed master to the housekeeper ', 'Event 1': ' Action - Action Verb ', 'Actor': ' i ', 'Direct Object': ' to the housekeeper ', 'Trigger_Word': ' see '}), 11: defaultdict(None, {'text': ' it was certainly a smaller room than those up stairs ', 'Event 1': ' Action - Action Verb ', 'Actor': ' it ', 'Direct Object': ' a smaller room than those up stairs ', 'Trigger_Word': ' was '}), 12: defaultdict(None, {'text': ' but i was more comfortable  for i was not being continually taken hold of and pulled about by the children as i had been ', 'Event 1': ' State - Characteristic ', 'Entity': ' i ', 'Trigger_Word': ' was ', 'Value': ' more comfortable for i was not being continually taken hold of and pulled about by the children as i had been '}), 13: defaultdict(None, {'text': ' i received quite as good food  or even better ', 'Event 1': ' State - Characteristic ', 'Entity': ' i ', 'Trigger_Word': ' received ', 'Value': ' quite as good food or even better '}), 14: defaultdict(None, {'text': ' i had my own cushion  and there was a stove -- it is the finest thing in the world at this season of the year ', 'Event 1': ' Action - Action Verb ', 'Actor': ' i ', 'Direct Object': ' it is the finest thing in the world at this season of the year ', 'Trigger_Word': ' had '}), 15: defaultdict(None, {'text': ' i used to go under the stove  and lie down quite beneath it ', 'Event 1': ' Action - Action Verb ', 'Actor': ' i ', 'Direct Object': ' lie down quite beneath it ', 'Trigger_Word': ' used to '}), 16: defaultdict(None, {'text': ' ah  i still dream of that stove  away ', 'Event 1': ' Action - Action Verb ', 'Actor': ' i ', 'Direct Object': ' that stove away ', 'Trigger_Word': ' dream of '})}
-    Relation_graph = {0: defaultdict(None, {'text': '" away . away ! " barked the yard - dog . " i \'ll tell you ; they said i was a pretty little fellow once . then i used to lie in a velvet - covered chair . up at the master \'s house . and sit in the mistress \'s lap ', 'Relation 1': ' Causal Effect - Effect on X ', 'Event1': ' i used to lie in a velvet - covered chair ', 'Event2': " up at the master's house "}), 1: defaultdict(None, {'text': ' away ! " barked the yard - dog . " i \'ll tell you ; they said i was a pretty little fellow once . then i used to lie in a velvet - covered chair . up at the master \'s house . and sit in the mistress \'s lap . they used to kiss my nose ', 'Relation 1': ' Causal Effect - X intent ', 'Event1': ' i used to lie in a velvet - covered chair ', 'Event2': " up at the master's house "}), 2: defaultdict(None, {'text': ' " i \'ll tell you ; they said i was a pretty little fellow once . then i used to lie in a velvet - covered chair . up at the master \'s house . and sit in the mistress \'s lap . they used to kiss my nose . and wipe my paws with an embroidered handkerchief ', 'Relation 1': ' Temporal - isBefore ', 'Event1': ' i used to lie in a velvet - covered chair ', 'Event2': " up at the master's house "}), 3: defaultdict(None, {'text': " then i used to lie in a velvet - covered chair . up at the master 's house . and sit in the mistress 's lap . they used to kiss my nose . and wipe my paws with an embroidered handkerchief . and i was called ' ami ", 'Relation 1': ' Temporal - isBefore ', 'Event1': ' they used to kiss my nose. and wipe my paws with an embroidered handkerchief ', 'Event2': " i was called'ami "}), 4: defaultdict(None, {'text': " up at the master 's house . and sit in the mistress 's lap . they used to kiss my nose . and wipe my paws with an embroidered handkerchief . and i was called ' ami . dear ami ", 'Relation 1': ' Causal Effect - Effect on X ', 'Event1': ' they used to kiss my nose. and wipe my paws with an embroidered handkerchief ', 'Event2': " i was called'ami "}), 5: defaultdict(None, {'text': " and sit in the mistress 's lap . they used to kiss my nose . and wipe my paws with an embroidered handkerchief . and i was called ' ami . dear ami . sweet ami ", 'Relation 1': ' Temporal - isBefore ', 'Event1': ' they used to kiss my nose ', 'Event2': ' wipe my paws with an embroidered handkerchief '}), 6: defaultdict(None, {'text': " they used to kiss my nose . and wipe my paws with an embroidered handkerchief . and i was called ' ami . dear ami . sweet ami . ' but after a while i grew too big for them ", 'Relation 1': ' Causal Effect - X intent ', 'Event1': ' they used to kiss my nose. and wipe my paws with an embroidered handkerchief ', 'Event2': ' i grew too big for them '}), 7: defaultdict(None, {'text': " and wipe my paws with an embroidered handkerchief . and i was called ' ami . dear ami . sweet ami . ' but after a while i grew too big for them . and they sent me away to the housekeeper 's room ", 'Relation 1': ' Causal Effect - X intent ', 'Event1': ' wipe my paws with an embroidered handkerchief ', 'Event2': ' i grew too big for them '}), 8: defaultdict(None, {'text': " and i was called ' ami . dear ami . sweet ami . ' but after a while i grew too big for them . and they sent me away to the housekeeper 's room . so i came to live on the lower story ", 'Relation 1': ' Causal Effect - X intent ', 'Event1': ' i grew too big for them ', 'Event2': " they sent me away to the housekeeper's room "}), 9: defaultdict(None, {'text': " dear ami . sweet ami . ' but after a while i grew too big for them . and they sent me away to the housekeeper 's room . so i came to live on the lower story . you can look into the room from where you stand ", 'Relation 1': ' Causal Effect - X intent ', 'Event1': ' i grew too big for them ', 'Event2': " they sent me away to the housekeeper's room "}), 10: defaultdict(None, {'text': " sweet ami . ' but after a while i grew too big for them . and they sent me away to the housekeeper 's room . so i came to live on the lower story . you can look into the room from where you stand . and see where i was master once ", 'Relation 1': ' Causal Effect - X intent ', 'Event1': ' i grew too big for them ', 'Event2': " they sent me away to the housekeeper's room "}), 11: defaultdict(None, {'text': " ' but after a while i grew too big for them . and they sent me away to the housekeeper 's room . so i came to live on the lower story . you can look into the room from where you stand . and see where i was master once . i was indeed master to the housekeeper ", 'Relation 1': ' Causal Effect - X intent ', 'Event1': ' i grew too big for them ', 'Event2': " they sent me away to the housekeeper's room "}), 12: defaultdict(None, {'text': " and they sent me away to the housekeeper 's room . so i came to live on the lower story . you can look into the room from where you stand . and see where i was master once . i was indeed master to the housekeeper . it was certainly a smaller room than those up stairs ", 'Relation 1': ' Causal Effect - X intent ', 'Event1': " they sent me away to the housekeeper's room ", 'Event2': ' i came to live on the lower story '}), 13: defaultdict(None, {'text': ' so i came to live on the lower story . you can look into the room from where you stand . and see where i was master once . i was indeed master to the housekeeper . it was certainly a smaller room than those up stairs . but i was more comfortable ', 'Relation 1': ' Causal Effect - X intent ', 'Event1': ' i came to live on the lower story ', 'Event2': ' you can look into the room from where you stand '}), 14: defaultdict(None, {'text': ' you can look into the room from where you stand . and see where i was master once . i was indeed master to the housekeeper . it was certainly a smaller room than those up stairs . but i was more comfortable . for i was not being continually taken hold of and pulled about by the children as i had been ', 'Relation 1': ' Causal Effect - X intent ', 'Event1': ' i was indeed master to the housekeeper ', 'Event2': ' it was certainly a smaller room than those up stairs '}), 15: defaultdict(None, {'text': ' and see where i was master once . i was indeed master to the housekeeper . it was certainly a smaller room than those up stairs . but i was more comfortable . for i was not being continually taken hold of and pulled about by the children as i had been . i received quite as good food ', 'Relation 1': ' Causal Effect - X intent ', 'Event1': ' for i was not being continually taken hold of and pulled about by the children as i had been ', 'Event2': ' i received quite as good food '}), 16: defaultdict(None, {'text': ' i was indeed master to the housekeeper . it was certainly a smaller room than those up stairs . but i was more comfortable . for i was not being continually taken hold of and pulled about by the children as i had been . i received quite as good food . or even better ', 'Relation 1': ' Causal Effect - X intent ', 'Event1': ' for i was not being continually taken hold of and pulled about by the children as i had been ', 'Event2': ' i received quite as good food '}), 17: defaultdict(None, {'text': ' it was certainly a smaller room than those up stairs . but i was more comfortable . for i was not being continually taken hold of and pulled about by the children as i had been . i received quite as good food . or even better . i had my own cushion ', 'Relation 1': ' Causal Effect - Effect on X ', 'Event1': ' i was not being continually taken hold of and pulled about by the children as i had been ', 'Event2': ' i received quite as good food '}), 18: defaultdict(None, {'text': ' but i was more comfortable . for i was not being continually taken hold of and pulled about by the children as i had been . i received quite as good food . or even better . i had my own cushion . and there was a stove -- it is the finest thing in the world at this season of the year ', 'Relation 1': ' Causal Effect - X intent ', 'Event1': ' i received quite as good food. or even better ', 'Event2': ' i had my own cushion '}), 19: defaultdict(None, {'text': ' for i was not being continually taken hold of and pulled about by the children as i had been . i received quite as good food . or even better . i had my own cushion . and there was a stove -- it is the finest thing in the world at this season of the year . i used to go under the stove ', 'Relation 1': ' Causal Effect - X intent ', 'Event1': ' for i was not being continually taken hold of and pulled about by the children as i had been ', 'Event2': ' i received quite as good food '}), 20: defaultdict(None, {'text': ' i received quite as good food . or even better . i had my own cushion . and there was a stove -- it is the finest thing in the world at this season of the year . i used to go under the stove . and lie down quite beneath it ', 'Relation 1': ' Causal Effect - X intent ', 'Event1': ' i received quite as good food ', 'Event2': ' i had my own cushion '}), 21: defaultdict(None, {'text': ' or even better . i had my own cushion . and there was a stove -- it is the finest thing in the world at this season of the year . i used to go under the stove . and lie down quite beneath it . ah ', 'Relation 1': ' Causal Effect - X intent ', 'Event1': ' there was a stove ', 'Event2': ' it is the finest thing in the world at this season of year '}), 22: defaultdict(None, {'text': ' i had my own cushion . and there was a stove -- it is the finest thing in the world at this season of the year . i used to go under the stove . and lie down quite beneath it . ah . i still dream of that stove ', 'Relation 1': ' Causal Effect - X intent ', 'Event1': ' there was a stove ', 'Event2': ' it is the finest thing in the world at this season of year '}), 23: defaultdict(None, {'text': ' and there was a stove -- it is the finest thing in the world at this season of the year . i used to go under the stove . and lie down quite beneath it . ah . i still dream of that stove . away ', 'Relation 1': ' Causal Effect - X intent ', 'Event1': ' i used to go under the stove ', 'Event2': ' and lie down quite beneath it '}), 24: defaultdict(None, {'text': ' i used to go under the stove . and lie down quite beneath it . ah . i still dream of that stove . away . away ! "', 'Relation 1': ' Temporal - isBefore ', 'Event1': ' i used to go under the stove ', 'Event2': ' and lie down quite beneath it '})}
+    coreference = corf_resolution(context)
+    relation_question, relation_score, relation_text, relation_difficulty = connect_relation_graph(context, Relation_graph, tokenizer, device, target, model_name, question_type)  
+    event_question, event_score, event_text, event_difficulty = connect_event_graph(context, Event_graph, tokenizer, device, target, model_name, question_type, coreference, new_lines)
 
-    relation_question, relation_score, relation_text = connect_relation_graph(context, core_graph, Relation_graph, tokenizer, device, target, model_name, question_type)
-    event_question, event_score, event_text = connect_event_graph(context, core_graph, Event_graph, tokenizer, device, target, model_name, question_type)
+    question_set, score_set, text_set, question_difficulty = [], [], [], []
+    for question, score, text, difficulty in zip(relation_question + event_question, relation_score + event_score, relation_text + event_text, relation_difficulty + event_difficulty):
+        if question not in question_set:
+            question_set.append(question)
+            score_set.append(score)
+            text_set.append(text)
+            question_difficulty.append(difficulty)
 
-    question_set, score_set, text_set = [], [], []
-    for question, score, text in zip(relation_question + event_question, relation_score + event_score, relation_text + event_text):
-        question = question.split('[')[1:-1]
-        for q in question:
-            ques = q.split(']')[1]
-            if ques not in question_set:
-                question_set.append(ques)
-                score_set.append(score)
-                text_set.append(text)
-
-    return question_set, score_set, text_set, Event_graph, Relation_graph
+    return question_set, score_set, text_set, question_difficulty, Event_graph, Relation_graph
 
 def generate_tagging(path_save_model, model_name, text, tokenizer, device):
     input_ids = enconder(tokenizer, max_len=512, text=text)
@@ -141,55 +130,60 @@ def generate_question(path_save_model, model_name, text, target, tokenizer, devi
     score = eval(question, target)
 
     print('Text : ', text)
-    print('Question: ', question, score)
+    print('Question: ', question, '\n')
     # print('Target : ', target, '\n')
     return question, score
 
-def connect_event_graph(context, core_graph, Event_graph, tokenizer, device, target, model_name, question_type):
-    event_dict = defaultdict(list)
-    for idx in Event_graph:
-        temp = []
-        if len(Event_graph[idx]['text'].split(' ')) > 3:
-            for key, entity in Event_graph[idx].items():
-                if key != 'text' and 'Event' not in key:
-                    temp.append(f'[{key}] {entity}')
-            for key, entity in Event_graph[idx].items():
-                if key != 'text' and 'Event' not in key and temp not in event_dict[entity]:
-                    event_dict[entity].append(temp)
+def connect_event_graph(context, Event_graph, tokenizer, device, target, model_name, question_type, coreference, new_lines):
+    # event_dict = defaultdict(list)
+    # for idx in Event_graph:
+    #     temp = []
+    #     if len(Event_graph[idx]['text'].split(' ')) > 3:
+    #         for key, entity in Event_graph[idx].items():
+    #             if key != 'text' and 'Event' not in key:
+    #                 temp.append(f'[{key}] {entity}')
+    #         for key, entity in Event_graph[idx].items():
+    #             if key != 'text' and 'Event' not in key and temp not in event_dict[entity]:
+    #                 event_dict[entity].append(temp)
     
-    event_question_set, event_score, event_text = [], [], []
-    for overlap_entity, event_set in event_dict.items():
-        if len(event_set) >= 2 :
-            base_event = event_set[0]
+    event_question_set, event_score, event_text, event_difficulty = [], [], [], []
+    for idx in Event_graph:
+        if len(Event_graph[idx]['text'].split(' ')) > 3:
             base_text = create_prompt(model_name, None, 'question', context)
-            for idx in range(1, len(event_set)):
-                # print(event_set[idx])
-                # for entity in base_event:
-                #     base_text += entity
-                for type in event_type:
-                    # print(type)
-                    text = f'[Event 1] {type} '
-                    for entity in event_set[idx]:
-                        flag = False
+            for type in event_type:
+                text = base_text + f'[Event 1] {type} '
+                have_arg = False
+                corf_range = 0
+                for key, entity in Event_graph[idx].items():
+                    if key != 'text' and 'Event' not in key:
+                        flag, corf_flag = False, False
                         for argument in question_keyword[question_type]:
-                            if argument == entity.split("]")[0][1:]:
-                                text += f'{entity.split("]")[0]}] {question_type} '
+                            if question_type == 'who' and key in question_keyword['who'] and not corf_flag:
+                                # print(" ".join(entity.split(' ')[1:-1]), coreference)
+                                corf, difficulty = check_corf(" ".join(entity.split(' ')[1:-1]), coreference, new_lines, idx)
+                                text += corf
+                                if corf != "":
+                                    corf_flag = True
+                                    corf_range = difficulty
+                            if argument == key:
+                                text += f'[{key}] {question_type} '
                                 flag = True
+                                have_arg = True
                         if not flag:
-                            text += entity
-                    text += '[END]'
+                            text += f'[{key}] {entity}'
+                text += '[END]'
+                if have_arg :
                     event_question, e_score = generate_question(f'../save_model/question/{model_name}/', model_name, text, target, tokenizer, device)
-                    if question_type in event_question:
-                        event_question_set.append(event_question)
-                        event_score.append(e_score)
-                        event_text.append(text)
-                        break
+                    event_question_set.append(event_question)
+                    event_score.append(e_score)
+                    event_text.append(text)
+                    event_difficulty.append(corf_range)
+                    break
             
-    return event_question_set, event_score, event_text
+    return event_question_set, event_score, event_text, event_difficulty
 
-def connect_relation_graph(context, core_graph, Relation_graph, tokenizer, device, target, model_name, question_type):
+def connect_relation_graph(context, Relation_graph, tokenizer, device, target, model_name, question_type):
     relation_dict = defaultdict(list)
-
     for idx in Relation_graph:
         if [Relation_graph[idx]['Relation 1'], Relation_graph[idx]['Event2']] not in relation_dict[Relation_graph[idx]['Event1']]:
             relation_dict[Relation_graph[idx]['Event1']].append([Relation_graph[idx]['Relation 1'], Relation_graph[idx]['Event2']])
@@ -197,52 +191,38 @@ def connect_relation_graph(context, core_graph, Relation_graph, tokenizer, devic
             relation_dict[Relation_graph[idx]['Event2']].append([Relation_graph[idx]['Relation 1'],Relation_graph[idx]['Event1']])
 
     graph = defaultdict(list)
-    relation_dfs(core_graph['Event1'], [], relation_dict, graph['Event1'])
-    relation_dfs(core_graph['Event2'], [], relation_dict, graph['Event2'])
+    for text in relation_dict:
+        relation_dfs(text, [], relation_dict, graph[text])
+    # relation_dfs(core_graph['Event1'], [], relation_dict, graph['Event1'])
+    # relation_dfs(core_graph['Event2'], [], relation_dict, graph['Event2'])
 
-    event1_flow, event2_flow = [], []
+    event_flow = []
     max_len = 0
-    for text in graph['Event1']:
-        if len(text) > max_len:
-            max_len = len(text)
-            event1_flow = text
+    for text in relation_dict:
+        for flow in graph[text]:
+            if len(flow) > max_len:
+                max_len = len(flow)
+                event_flow = flow
     
-    max_len = 0
-    for text in graph['Event2']:
-        if len(text) > max_len:
-            max_len = len(text)
-            event2_flow = text
-    
-    # for event in event1_flow:
+    # for event in event_flow:
     #     print(event)
-    # print('\n')
-    # for event in event2_flow:
-    #     print(event)
+    # input()
 
-    relation_question_set, relation_score, relation_text = [], [], []
-    for event in event1_flow:       
+    relation_question_set, relation_score, relation_text, relation_difficulty = [], [], [], []
+    for idx in range(len(event_flow)):
         text = create_prompt(model_name, None, 'question', context)
-        if core_graph['Event1'] not in event and core_graph['Event2'] not in event :
-            # text += f'[Relation1] {core_graph["Relation 1"]} '
-            text += f'[Relation1] Temporal - the same '
-            text += f'[Event1] {core_graph["Event1"]} [Event2] {event} [END]'
-            relation_question, r_score = generate_question(f'../save_model/question/{model_name}/', model_name, text, target, tokenizer, device)
-            relation_question_set.append(relation_question)
-            relation_score.append(r_score)
-            relation_text.append(text)
-    
-    for event in event2_flow:       
-        text = create_prompt(model_name, None, 'question', context)
-        if core_graph['Event1'] not in event and core_graph['Event2'] not in event :
-            # text += f'[Relation1] {core_graph["Relation 1"]} '
-            text += f'[Relation1] Temporal - the same '
-            text += f'[Event1] {event} [Event2] {core_graph["Event2"]} [END]'
-            relation_question, r_score = generate_question(f'../save_model/question/{model_name}/', model_name, text, target, tokenizer, device)
-            relation_question_set.append(relation_question)
-            relation_score.append(r_score)
-            relation_text.append(text)
-    
-    return relation_question_set, relation_score, relation_text
+        for idx_2 in range(idx+2, len(event_flow)):
+            # print(event_flow[idx], event_flow[idx_2])
+            if event_flow[idx] not in event_flow[idx_2] and event_flow[idx_2] not in event_flow[idx] :
+                text += f'[Relation1] Temporal - the same '
+                text += f'[Event1] {event_flow[idx]} [Event2] why [Event3] {event_flow[idx_2]} [END]'
+                relation_question, r_score = generate_question(f'../save_model/question/{model_name}/', model_name, text, target, tokenizer, device)
+                relation_question_set.append(relation_question)
+                relation_score.append(r_score)
+                relation_text.append(text)
+                relation_difficulty.append(idx_2 - idx)
+
+    return relation_question_set, relation_score, relation_text, relation_difficulty
 
 def relation_dfs(text, temp, relation_dict, graph):
     if text in temp:
@@ -256,6 +236,27 @@ def relation_dfs(text, temp, relation_dict, graph):
                 relation_dfs(next_event[1], temp, relation_dict, graph)
     temp.remove(text)
     return 
+
+def check_corf(subject, coreference, new_lines, idx):
+    pronoun = ""
+    flag = False
+    for entity_name in coreference:
+        for entity in coreference[entity_name]:
+            if subject == entity:
+                flag = True
+                pronoun = entity_name
+                break
+        if flag :
+            break
+
+    # print(subject)
+    corf_range = 1000
+    for idx_2 in range(len(new_lines)):
+        if flag and pronoun in new_lines[idx_2]:
+            # print(idx, pronoun, new_lines[idx_2])
+            corf_range = min(corf_range, abs(idx - idx_2))
+
+    return (f'[Relation1] Coreference - Coref [Arg1] {subject} [Arg2] {pronoun} ', corf_range) if flag and subject != pronoun  else ("", 0)
 
 def eval(pred, tar):
     """

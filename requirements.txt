@@ -10,5 +10,15 @@ accelerate==0.27.2
 google-generativeai
 openai
 
+
 # cuda
 #pip install torch==1.13.0+cu116 torchvision==0.14.0+cu116 torchaudio==0.13.0 --extra-index-url https://download.pytorch.org/whl/cu116
+
+
+#allennlp
+spacy==3.3.3
+# python -m spacy download en_core_web_sm
+allennlp
+--pre allennlp-models
+
+#下載完 allennlp 要重新下載 cuda, transformers

@@ -1,4 +1,4 @@
-from dataloader import Tagging_Datasets, Question_Datasets
+from dataloader import Extraction_Datasets, Question_generation_Datasets, Ranking_dataset
 from model import create_model
 from training import train_model, training
 from inference import inference
@@ -19,7 +19,11 @@ def main(batch_size = 4,
    
     if Generation == 'tagging' :
         print('Tagging : ', event_or_relation)
-    print('Generation : ', Generation)
+        print('Generation : ', Generation)
+    elif Generation == 'question':
+        print('Generation : ', Generation)
+    elif Generation == 'ranking':
+        print('Generation : ', Generation)
 
     model, tokenizer = create_model(model_name)
     model.to(device)
@@ -27,14 +31,19 @@ def main(batch_size = 4,
     path_save_model = checkdir(path_save_model, event_or_relation, Generation, model_name)
     if Generation == 'tagging' :
         file_name = path_save_model + 'tagging.csv'
-        train_data = Tagging_Datasets('data/train.csv', model_name, tokenizer, event_or_relation = event_or_relation, max_len = max_len)
-        valid_data = Tagging_Datasets('data/valid.csv', model_name, tokenizer, event_or_relation = event_or_relation, max_len = max_len)
-        test_data = Tagging_Datasets('data/test.csv', model_name, tokenizer, event_or_relation = event_or_relation, max_len = max_len)
+        train_data = Extraction_Datasets('data/train.csv', model_name, tokenizer, event_or_relation = event_or_relation, max_len = max_len)
+        valid_data = Extraction_Datasets('data/valid.csv', model_name, tokenizer, event_or_relation = event_or_relation, max_len = max_len)
+        test_data = Extraction_Datasets('data/test.csv', model_name, tokenizer, event_or_relation = event_or_relation, max_len = max_len)
     elif Generation == 'question':
         file_name = path_save_model + 'question.csv'
-        train_data = Question_Datasets('data/train.csv', model_name, tokenizer, max_len)
-        valid_data = Question_Datasets('data/valid.csv', model_name, tokenizer, max_len)
-        test_data = Question_Datasets('data/test.csv', model_name, tokenizer, max_len)
+        train_data = Question_generation_Datasets('data/train.csv', model_name, tokenizer, max_len)
+        valid_data = Question_generation_Datasets('data/valid.csv', model_name, tokenizer, max_len)
+        test_data = Question_generation_Datasets('data/test.csv', model_name, tokenizer, max_len)
+    elif Generation == 'ranking':
+        file_name = path_save_model + 'ranking.csv'
+        train_data = Ranking_dataset('data/Ranking/train_ranking.csv', model_name, tokenizer, max_len)
+        valid_data = Ranking_dataset('data/Ranking/valid_ranking.csv', model_name, tokenizer, max_len)
+        test_data = Ranking_dataset('data/Ranking/test_ranking.csv', model_name, tokenizer, max_len)
     
     if not test_mode:
         training(model, tokenizer, train_data, valid_data, path_save_model, epochs=epochs, batch_size = batch_size)
@@ -48,7 +57,7 @@ if __name__ == '__main__':
     parser.add_argument('--max_len', '-l', type=int, default=512)
     parser.add_argument('--test_mode', '-tm', type=bool, default=False)
     parser.add_argument('--event_or_relation', '-t', type=str, choices=['Event', 'Relation'], default='Event')
-    parser.add_argument('--Generation', '-g', type=str, choices=['tagging', 'question'], default='tagging')
+    parser.add_argument('--Generation', '-g', type=str, choices=['tagging', 'question', 'ranking'], default='tagging')
     parser.add_argument('--Model', '-m', type=str, choices=['Mt0', 'T5', 'Bart', 'roberta', 'gemma', 'flant5'], default='Mt0')
     args = parser.parse_args()
     
