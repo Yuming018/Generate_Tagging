@@ -7,6 +7,7 @@ from tqdm import tqdm
 from collections import defaultdict
 from sklearn.metrics import precision_score, recall_score, f1_score, classification_report, confusion_matrix
 from sentence_transformers import SentenceTransformer, util
+from helper import checkdir
 
 metric = evaluate.load("bleu")
 
@@ -14,9 +15,11 @@ def read_data(path):
     data = pd.read_csv(path, index_col = False, encoding_errors = 'ignore')
     return data.values
 
-def save_csv(dataset, path):
-
-    row_1 = ["Story", "Content", "Question_predict", "Question_target", "BLEU-1", "BLEU-2", "BLEU-3", "BLEU-4", "Sentence_Bert_Score", "Overlap score"]
+def save_csv(dataset, path, Generation):
+    if Generation == 'tagging':
+        row_1 = ["Story", "Content", "Question_predict", "Question_target", "BLEU-1", "BLEU-2", "BLEU-3", "BLEU-4", "Sentence_Bert_Score", "Overlap score"]
+    elif Generation == 'question':
+        row_1 = ["Story", "Content", "Question_predict", "Question_target", "Sentence_Bert_Score"]
     with open(path, 'w', newline = '', encoding='utf-8') as csvfile:
         writer = csv.writer(csvfile, delimiter = ',')
         writer.writerow(row_1)
@@ -112,7 +115,8 @@ class eval_Realtion:
     def Sentence_Overlap_eval(self, record):
         # print(len(record))
         keys_to_check = ['Relation 1', 'Event1', 'Event2']
-        sent_score, overlap_score, count = 0, 0, 0
+        sent_score, overlap_score = defaultdict(int), defaultdict(int)
+        count = 0
         for idx in tqdm(self.pred_dict):
             pred = self.pred_dict[idx]
             tar = self.tar_dict[idx]
@@ -125,15 +129,19 @@ class eval_Realtion:
             計算 senteceTransformer score
             """
             result = self.cal_sentence(pred, tar)
-            sent_score += result
+            sent_score['non_label'] += result
             record[count] = np.append(record[count], result)
+            if pred['Relation 1'] == tar['Relation 1']:
+                sent_score['label'] += result
             
             """
             計算 overlap ration score
             """
             result = self.cal_overlap(pred, tar)
-            overlap_score += result
+            overlap_score['non_label'] += result
             record[count] = np.append(record[count], result)
+            if pred['Relation 1'] == tar['Relation 1']:
+                overlap_score['label'] += result
 
             count += 1
             
@@ -351,10 +359,52 @@ class eval_Event:
             f1_i = 0
         
         return f1_i, f1_c
+    
+class eval_Question:
+    def __init__(self, path) -> None:
+        self.pred_dict, self.tar_dict = defaultdict(defaultdict), defaultdict(defaultdict)
+        self.content = []
+        self.all_type_dict = dict()
+        self.dataset = read_data(path)
+        self.process_data()
+    
+    def process_data(self):
+        for idx, data in tqdm(enumerate(self.dataset)):
+            pred, tar =  data[2], data[3]
+            pred = pred.split('[')[1:-1]
+            tar = tar.split('[')[1:-1]
+            self.content.append(data)
+            for p, t in zip(pred, tar):
+                self.pred_dict[idx][p.split(']')[0]] = p.split(']')[1]
+                self.tar_dict[idx][t.split(']')[0]] = t.split(']')[1]
+    
+    def SentT(self):
+        sent_score = 0
+        record = []
+        for idx in tqdm(self.pred_dict):
+            pred = self.pred_dict[idx]
+            tar = self.tar_dict[idx]
+            result = self.cal_sentT(pred, tar)
+            sent_score += result
+            data = np.concatenate((self.content[idx], [result]))
+            record.append(data)
+        return record, sent_score
+    
+    def cal_sentT(self, pred_dict, tar_dict):
+        model = SentenceTransformer('multi-qa-MiniLM-L6-cos-v1')
+        score = 0
+        for key in pred_dict:
+            for key_2 in tar_dict:
+                query_embedding = model.encode(pred_dict[key])
+                passage_embedding = model.encode(tar_dict[key_2])
+                result = util.dot_score(query_embedding, passage_embedding)
+                score = max(score, round(result[0][0].item(), 2))
+        
+        return score 
          
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--Type', '-t',
+    parser.add_argument('--event_or_relation', '-t',
                         choices=["Relation", "Event"],
                         type=str,
                         default='Event')
@@ -368,29 +418,39 @@ if __name__ == '__main__':
                         default='Mt0')
     args = parser.parse_args()
     
-    print('Type : ', args.Type)
+    if args.Generation == 'tagging' :
+        print('Tagging : ', args.event_or_relation)
     print('Generation : ', args.Generation)
-    print('Model : ', args.Model, '\n')
+    print('Model :', args.Model, '\n')
+    
+    path = checkdir('save_model', args.event_or_relation, args.Generation, args.Model)
 
-    path = f'save_model/{args.Type}/{args.Generation}/{args.Model}/'
-    if args.Type == 'Event':
-        eval = eval_Event(path + f'{args.Generation}.csv')
-        f1_i, f1_c = eval.NER_eval()
+    if args.Generation == 'tagging' :
+        if args.event_or_relation == 'Event':
+            eval = eval_Event(path + f'{args.Generation}.csv')
+            f1_i, f1_c = eval.NER_eval()
 
-        print('f1_c : ', f1_c)
-        print('f1_i : ', f1_i)   
-    elif args.Type == 'Relation':
-        eval = eval_Realtion(path + f'{args.Generation}.csv')
-        # eval.process_label()
-        record, bleu_score = eval.bleu_eval()
-        record, s_score, o_score = eval.Sentence_Overlap_eval(record)
-        
+            print('f1_c : ', f1_c)
+            print('f1_i : ', f1_i)   
+        elif args.event_or_relation == 'Relation':
+            eval = eval_Realtion(path + f'{args.Generation}.csv')
+            # eval.process_label()
+            record, bleu_score = eval.bleu_eval()
+            record, s_score, o_score = eval.Sentence_Overlap_eval(record)
+            
+            num = len(eval.dataset)
+            print("BLEU-1 : ", round(bleu_score[0]/num, 2))
+            print("BLEU-2 : ", round(bleu_score[1]/num, 2))
+            print("BLEU-3 : ", round(bleu_score[2]/num, 2))
+            print("BLEU-4 : ", round(bleu_score[3]/num, 2))
+            print("Overlap Ratio : ", round(o_score['label']/num, 2))
+            print("Overlap Ratio non_label: ", round(o_score['non_label']/num, 2))
+            print("SentenceTransformer : ", round(s_score['label']/num, 2))
+            print("SentenceTransformer non_label : ", round(s_score['non_label']/num, 2))
+            save_csv(record, path + 'score.csv', args.Generation)
+    elif args.Generation == 'question' :
+        eval = eval_Question(path + f'{args.Generation}.csv')
+        record, s_score = eval.SentT()
         num = len(eval.dataset)
-        print(num)
-        print("BLEU-1 : ", round(bleu_score[0]/num, 2))
-        print("BLEU-2 : ", round(bleu_score[1]/num, 2))
-        print("BLEU-3 : ", round(bleu_score[2]/num, 2))
-        print("BLEU-4 : ", round(bleu_score[3]/num, 2))
-        print("Overlap Ratio : ", round(o_score/num, 2))
         print("SentenceTransformer : ", round(s_score/num, 2))
-        save_csv(record, path + 'score.csv')
+        save_csv(record, path + 'score.csv', args.Generation)

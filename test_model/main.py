@@ -16,13 +16,13 @@ fairytale_qa_type = ['action', 'outcome resolution', 'causal relationship',
                  'prediction', 'setting', 'feeling', 'character']
 
 def save_csv(record, path):
-    row = ['Paragraph', 'Context', 'Prediction', 'Reference', 'Input_text', 'Question_difficulty'  'SentenceBert', 'Event graph', 'Relation graph']
+    row = ['Paragraph', 'Context', 'Prediction', 'Reference', 'Input_text', 'Question type', 'Question_difficulty', 'SentenceBert', 'Event graph', 'Relation graph']
 
     with open(path, 'w', newline = '', encoding='utf-8') as csvfile:
         writer = csv.writer(csvfile, delimiter = ',')
         writer.writerow(row)
         for i in range(len(record['context'])):
-            writer.writerow([record['paragraph'][i], record['context'][i], record['predict'][i], record['reference'][i], record['input_text'][i], record['question_difficulty'][i], record['eval_score'][i], record['Event_graph'][i], record['Relation_graph'][i]])
+            writer.writerow([record['paragraph'][i], record['context'][i], record['predict'][i], record['reference'][i], record['input_text'][i], record['question_5w1h'][i], record['question_difficulty'][i], record['eval_score'][i], record['Event_graph'][i], record['Relation_graph'][i]])
 
 def main(device = 'cpu',
          model_name = "Mt0",
@@ -37,8 +37,8 @@ def main(device = 'cpu',
     record = defaultdict(list)
     for context_type, paragraph, context, focus_context, target in tqdm(dataset):
         # if count == 4:
-        question_set, score_set, text_set, question_difficulty, Event_graph, Relation_graph = create_knowledge_graph(context_type, context, focus_context, target, tokenizer, device, model_name, question_type)
-        for question, score, text, difficulty in zip(question_set, score_set, text_set, question_difficulty):
+        question_set, score_set, text_set, question_difficulty, question_5w1h, Event_graph, Relation_graph = create_knowledge_graph(context_type, context, focus_context, target, tokenizer, device, model_name, question_type)
+        for question, score, text, difficulty, q_5w1h in zip(question_set, score_set, text_set, question_difficulty, question_5w1h):
             record['context'].append(context)
             record['predict'].append(question)
             record['reference'].append(target)
@@ -48,6 +48,7 @@ def main(device = 'cpu',
             record['Relation_graph'].append(Relation_graph)
             record['input_text'].append(text)
             record['question_difficulty'].append(difficulty)
+            record['question_5w1h'].append(q_5w1h)
         save_csv(record, path = 'predict.csv')
         count += 1
         if count > 5:
