@@ -1,8 +1,10 @@
 import torch
 import time
 import numpy as np
+import evaluate
+from datasets import load_metric
 from transformers import GenerationConfig
-from transformers import Trainer, DataCollatorForSeq2Seq, Seq2SeqTrainingArguments, TrainingArguments, DataCollatorForLanguageModeling
+from transformers import Trainer, DataCollatorForSeq2Seq, Seq2SeqTrainingArguments, TrainingArguments, DataCollatorWithPadding
 
 loss_fn = torch.nn.CrossEntropyLoss()
 
@@ -59,7 +61,7 @@ def train_model(model, train_dataloader, val_dataloader, device, tokenizer, epoc
             time_elapsed = time.time() - t0_batch
             
             if (step % 200 == 0 and step != 0) or (step == len(train_dataloader) - 1):
-                val_loss = evaluate(model, val_dataloader, device)
+                val_loss = evaluate_model(model, val_dataloader, device)
                 print(f"{epoch + 1:^7} | {step:^7} | {batch_loss / batch_counts:^12.6f} | {val_loss:^10.6f} | {time_elapsed:^9.2f}")
                 batch_loss, batch_counts = 0, 0
                 t0_batch = time.time()
@@ -71,10 +73,10 @@ def train_model(model, train_dataloader, val_dataloader, device, tokenizer, epoc
 
         avg_train_loss = total_loss / len(train_dataloader)
         time_elapsed = time.time() - t0_epoch
-        val_loss = evaluate(model, val_dataloader, device)
+        val_loss = evaluate_model(model, val_dataloader, device)
         print(f"{epoch + 1:^7} | {step:^7} | {avg_train_loss:^12.6f} | {val_loss:^10.6f} | {time_elapsed:^9.2f}")
 
-def evaluate(model, val_dataloader, device):
+def evaluate_model(model, val_dataloader, device):
     val_loss = []
 
     model.eval()
@@ -90,13 +92,7 @@ def evaluate(model, val_dataloader, device):
         
     return np.mean(val_loss)
 
-def training(model, tokenizer, train_data, valid_data, path_save_model, epochs, batch_size):
-    collate_fn = DataCollatorForSeq2Seq(
-        tokenizer,
-        model=model,
-        label_pad_token_id=-100,
-        pad_to_multiple_of=8
-    )
+def seq2seq_training(model, tokenizer, train_data, valid_data, path_save_model, epochs, batch_size):
     
     args = Seq2SeqTrainingArguments(
         output_dir= path_save_model + "checkpoints",
@@ -122,6 +118,13 @@ def training(model, tokenizer, train_data, valid_data, path_save_model, epochs, 
         dataloader_prefetch_factor = None,
     )
 
+    collate_fn = DataCollatorForSeq2Seq(
+        tokenizer,
+        model=model,
+        label_pad_token_id=-100,
+        pad_to_multiple_of=8
+    )
+        
     trainer = Trainer(
         model=model,
         train_dataset=train_data,
@@ -134,6 +137,50 @@ def training(model, tokenizer, train_data, valid_data, path_save_model, epochs, 
 
     trainer.train()
     # model.save_pretrained(path_save_model)
+    return
+
+def cls_training(model, tokenizer, train_data, valid_data, path_save_model, epochs, batch_size):
+    def compute_metrics(eval_pred):
+        load_accuracy = load_metric("accuracy")
+        load_f1 = load_metric("f1")
+        
+        logits, labels = eval_pred
+        predictions = np.argmax(logits, axis=-1)
+        accuracy = load_accuracy.compute(predictions=predictions, references=labels)["accuracy"]
+        f1 = load_f1.compute(predictions=predictions, references=labels)["f1"]
+        return {"accuracy": accuracy, "f1": f1}
+        
+    args = TrainingArguments(
+            output_dir= path_save_model + "checkpoints",
+            overwrite_output_dir=True,
+            per_device_train_batch_size=batch_size,
+            per_device_eval_batch_size=batch_size,
+            num_train_epochs=epochs,
+            learning_rate=2e-5,
+            logging_steps=100,
+            evaluation_strategy="steps",
+            eval_steps=100,
+            save_strategy="steps",
+            save_steps=100, 
+            save_total_limit=1, 
+            load_best_model_at_end = True,
+            metric_for_best_model = 'eval_loss',
+            weight_decay=0.01,
+        )
+    collate_fn = DataCollatorWithPadding(tokenizer=tokenizer)
+
+    trainer = Trainer(
+        model=model,
+        args=args,
+        train_dataset=train_data,
+        eval_dataset=valid_data,
+        tokenizer=tokenizer,
+        data_collator=collate_fn,
+        compute_metrics=compute_metrics,
+    )
+
+    trainer.train()
+    return
 
 if __name__ == '__main__':
     train_model()

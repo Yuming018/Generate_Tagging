@@ -71,10 +71,8 @@ def create_prompt(model_name, tagging_type, generate_type, context):
         elif model_name == 'T5' or model_name == 'flant5'  or model_name == 'Bart' or model_name == 'roberta':
             text = f"[Context] {context} "
     elif generate_type == 'ranking':
-        if model_name == 'Mt0' or model_name == 'gemma':
-            text = f"Please use the provided context to determine whether the question can be answered [Context] {context} "
-        elif model_name == 'T5' or model_name == 'flant5'  or model_name == 'Bart' or model_name == 'roberta':
-            text = f"[Context] {context} "
+        if model_name == 'distil':
+            text = f"[CLS] {context} "
     
     return text
 

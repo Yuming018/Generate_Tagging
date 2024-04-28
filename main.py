@@ -1,7 +1,7 @@
 from dataloader import Extraction_Datasets, Question_generation_Datasets, Ranking_dataset
 from model import create_model
-from training import train_model, training
-from inference import inference
+from training import train_model, seq2seq_training, cls_training
+from inference import seq2seq_inference, cls_inference
 from helper import checkdir
 import argparse
 import torch
@@ -25,11 +25,11 @@ def main(batch_size = 4,
     elif Generation == 'ranking':
         print('Generation : ', Generation)
 
-    model, tokenizer = create_model(model_name)
+    model, tokenizer = create_model(model_name, Generation)
     model.to(device)
 
     path_save_model = checkdir(path_save_model, event_or_relation, Generation, model_name)
-    if Generation == 'tagging' :
+    if Generation == 'tagging':
         file_name = path_save_model + 'tagging.csv'
         train_data = Extraction_Datasets('data/train.csv', model_name, tokenizer, event_or_relation = event_or_relation, max_len = max_len)
         valid_data = Extraction_Datasets('data/valid.csv', model_name, tokenizer, event_or_relation = event_or_relation, max_len = max_len)
@@ -46,9 +46,16 @@ def main(batch_size = 4,
         test_data = Ranking_dataset('data/Ranking/test_ranking.csv', model_name, tokenizer, max_len)
 
     if not test_mode:
-        training(model, tokenizer, train_data, valid_data, path_save_model, epochs=epochs, batch_size = batch_size)
+        if Generation == 'tagging' or Generation == 'question':
+            seq2seq_training(model, tokenizer, train_data, valid_data, path_save_model, epochs=epochs, batch_size = batch_size)
+        elif Generation == 'ranking':
+            cls_training(model, tokenizer, train_data, valid_data, path_save_model, epochs=epochs, batch_size = batch_size)
         # train_model(model, train_dataloader, valid_dataloader, device, tokenizer=tokenizer, epochs=epochs, path_save_model = best_pth)
-    inference(model_name, model, tokenizer, test_data, test_data.paragraph, device, save_file_path = file_name, path_save_model = path_save_model)
+
+    if Generation == 'tagging' or Generation == 'question':
+        seq2seq_inference(model_name, model, tokenizer, test_data, test_data.paragraph, device, save_file_path = file_name, path_save_model = path_save_model)
+    elif Generation == 'ranking':
+        cls_inference(model_name, model, tokenizer, test_data, test_data.paragraph, device, save_file_path = file_name, path_save_model = path_save_model)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -58,7 +65,7 @@ if __name__ == '__main__':
     parser.add_argument('--test_mode', '-tm', type=bool, default=False)
     parser.add_argument('--event_or_relation', '-t', type=str, choices=['Event', 'Relation'], default='Event')
     parser.add_argument('--Generation', '-g', type=str, choices=['tagging', 'question', 'ranking'], default='tagging')
-    parser.add_argument('--Model', '-m', type=str, choices=['Mt0', 'T5', 'Bart', 'roberta', 'gemma', 'flant5'], default='Mt0')
+    parser.add_argument('--Model', '-m', type=str, choices=['Mt0', 'T5', 'Bart', 'roberta', 'gemma', 'flant5', 'distil', 'deberta'], default='Mt0')
     args = parser.parse_args()
     
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")

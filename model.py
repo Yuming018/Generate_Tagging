@@ -1,8 +1,15 @@
 import torch.nn as nn
-from transformers import AutoTokenizer, AutoModelForSeq2SeqLM, AutoModelForCausalLM
+from transformers import AutoTokenizer, AutoModelForSeq2SeqLM, AutoModelForCausalLM, AutoModelForSequenceClassification
 from peft import get_peft_model, PromptTuningInit, PromptTuningConfig, TaskType, LoraConfig
 
-def create_model(model_name):
+def create_model(model_name, Generation):
+    if Generation == 'ranking' :
+        if model_name != 'distil' and model_name != 'deberta':
+            raise TypeError("Ranking model 只包含 distil, deberta")
+    elif Generation == 'tagging' or Generation == 'question':
+        if model_name == 'distil' and model_name != 'deberta':
+            raise TypeError(f"{Generation} model 不包含 distil, deberta")
+
     if model_name == 'Mt0':
         model, tokenizer, model_name = Mt0()
     elif model_name == 'T5':
@@ -15,9 +22,31 @@ def create_model(model_name):
         model, tokenizer, model_name = roberta()
     elif model_name == 'gemma':
         model, tokenizer, model_name = gemma()
+    elif model_name == 'distil':
+        model, tokenizer, model_name = DistilBERT()
+    elif model_name == 'deberta':
+        model, tokenizer, model_name = deberta()
     
     print('Model name :', model_name, '\n')
     return model, tokenizer
+
+def DistilBERT():
+    model_name = "distilbert/distilbert-base-uncased"
+    id2label = {0: 'Can not answer', 1: 'Can answer'}
+    label2id = {'Can not answer': 0, 'Can answer': 1}
+
+    tokenizer = AutoTokenizer.from_pretrained(model_name)
+    model = AutoModelForSequenceClassification.from_pretrained(model_name, num_labels=2, id2label=id2label, label2id=label2id)
+    return model, tokenizer, model_name
+
+def deberta():
+    model_name = "microsoft/deberta-v3-base"
+    id2label = {0: False, 1: True}
+    label2id = {False: 0, True: 1}
+
+    tokenizer = AutoTokenizer.from_pretrained(model_name)
+    model = AutoModelForSequenceClassification.from_pretrained(model_name, num_labels=2, id2label=id2label, label2id=label2id)
+    return model, tokenizer, model_name
 
 def Mt0():
     model_name = "bigscience/mt0-large"

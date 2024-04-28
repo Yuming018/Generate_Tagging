@@ -2,6 +2,7 @@ import pandas as pd
 from tqdm import tqdm
 from collections import defaultdict, Counter
 from helper import enconder, text_segmentation, create_prompt
+from transformers import DataCollatorWithPadding
 
 legal_tagging = ['Causal Effect',
             'Temporal',
@@ -242,7 +243,7 @@ class Ranking_dataset:
         self.tokenizer = tokenizer
         self.dataset = self.get_data(path)
         self.datasets, self.paragraph = [], []
-        self.create_dataset()  
+        self.create_dataset()
 
     def get_data(self, path):
         data = pd.read_csv(path)
@@ -252,31 +253,31 @@ class Ranking_dataset:
     def create_dataset(self):
         for idx in tqdm(range(len(self.dataset))):
             dict = {}
-            input_ids, attention_mask = self.create_input(idx)
-            target_ids = self.create_target(idx)
+            input_ids, attention_mask, text = self.create_input(idx)
+            label = self.create_target(idx)
             dict['input_ids'] = input_ids
             dict['attention_mask'] = attention_mask
-            dict['labels'] = target_ids
+            dict['text'] = text
+            dict['label'] = label
             self.datasets.append(dict)
             self.paragraph.append(self.dataset[idx][1])
 
         return     
     
     def create_input(self, idx):
-        text = create_prompt(self.model_name, None, 'ranking', self.dataset[idx][2])
-        text += f'[Question] {self.dataset[idx][3]} [END]'
+        # text = create_prompt(self.model_name, None, 'ranking', self.dataset[idx][2])
+        text = f'{self.dataset[idx][3]}  <SEP>  {self.dataset[idx][2]}'
         encoded_sent = enconder(self.tokenizer, 512, text = text)
         # print(encoded_sent.get('input_ids'))
         # print(self.tokenizer.decode(encoded_sent.get('input_ids'), skip_special_tokens=True))   
         # input()
-        return encoded_sent.get('input_ids'), encoded_sent.get('attention_mask')
+        return encoded_sent.get('input_ids'), encoded_sent.get('attention_mask'), text
 
     def create_target(self, idx):
-        text = str(self.dataset[idx][5])
-        encoded_sent = enconder(self.tokenizer, 128, text = text)
-        # print(encoded_sent.get('input_ids'))
-        # print(self.tokenizer.decode(encoded_sent.get('input_ids'), skip_special_tokens=True))
-        return encoded_sent.get('input_ids')
+        if self.dataset[idx][5] == False:
+            return 0
+        elif self.dataset[idx][5] == True:
+            return 1
 
     def __len__(self):
         return len(self.datasets)
