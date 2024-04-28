@@ -103,7 +103,7 @@ def create_knowledge_graph(context_type, context, core_context, target, tokenize
             score_set.append(score)
             text_set.append(text)
             question_difficulty.append(difficulty)
-            question_5w1h.append(question_type)
+            question_5w1h.append('why')
     
     for question_type in question_keyword:
         event_question, event_score, event_text, event_difficulty = connect_event_graph(context, Event_graph, tokenizer, device, target, model_name, question_type, coreference, new_lines)

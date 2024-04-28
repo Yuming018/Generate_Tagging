@@ -145,9 +145,9 @@ class Question_generation_Datasets:
         self.model_name = model_name
         self.tokenizer = tokenizer
         self.dataset = self.get_data(path)
-        if self.path == 'data/test.csv':
-            self.Relation_tagging = self.get_data(f'save_model/Relation/tagging/{model_name}/tagging.csv')
-            self.Evnet_tagging = self.get_data(f'save_model/Event/tagging/{model_name}/tagging.csv')
+        # if self.path == 'data/test.csv':
+        #     self.Relation_tagging = self.get_data(f'save_model/Relation/tagging/{model_name}/tagging.csv')
+        #     self.Evnet_tagging = self.get_data(f'save_model/Event/tagging/{model_name}/tagging.csv')
         self.datasets, self.paragraph = [], []
         self.create_dataset()  
 
@@ -183,32 +183,32 @@ class Question_generation_Datasets:
         context = self.dataset[story_list[0]][1]
         text = create_prompt(self.model_name, None, 'question', context)
 
-        if self.path == 'data/test.csv':
-            while self.event_idx < len(self.Evnet_tagging) and self.Evnet_tagging[self.event_idx][0] == story_name:
-                tagging = self.Evnet_tagging[self.event_idx][2].replace('[END]', '')
-                text += tagging
-                self.event_idx += 1
-            while self.realtion_idx < len(self.Relation_tagging) and self.Relation_tagging[self.realtion_idx][0] == story_name:
-                tagging = self.Relation_tagging[self.realtion_idx][2].replace('[END]', '')
-                text += tagging
-                self.realtion_idx += 1
-            text += '[END]'
-        else:  
-            for idx in story_list:
-                tagging_type = 'Event' if self.dataset[idx][5] else 'Relation'
-                tagging = self.dataset[idx][5] if self.dataset[idx][5] else self.dataset[idx][6]
-                text += f"[{tagging_type}] {tagging}"
+        # if self.path == 'data/test.csv':
+        #     while self.event_idx < len(self.Evnet_tagging) and self.Evnet_tagging[self.event_idx][0] == story_name:
+        #         tagging = self.Evnet_tagging[self.event_idx][2].replace('[END]', '')
+        #         text += tagging
+        #         self.event_idx += 1
+        #     while self.realtion_idx < len(self.Relation_tagging) and self.Relation_tagging[self.realtion_idx][0] == story_name:
+        #         tagging = self.Relation_tagging[self.realtion_idx][2].replace('[END]', '')
+        #         text += tagging
+        #         self.realtion_idx += 1
+        #     text += '[END]'
+        # else:  
+        for idx in story_list:
+            tagging_type = 'Event' if self.dataset[idx][5] else 'Relation'
+            tagging = self.dataset[idx][5] if self.dataset[idx][5] else self.dataset[idx][6]
+            text += f"[{tagging_type}] {tagging}"
 
-                for i in range(7, len(self.dataset[idx])):
-                    if self.dataset[idx][i] != '':
-                        left_parenthesis_index = self.dataset[idx][i].rfind('(')
-                        if tagging_type == 'Relation' and i == 7:
-                            text += " [Event1] " + "".join(self.dataset[idx][i][:left_parenthesis_index])
-                        elif tagging_type == 'Relation' and i == 8:
-                            text += " [Event2] " + "".join(self.dataset[idx][i][:left_parenthesis_index])
-                        elif tagging_type == 'Event':
-                            temp = " ".join(self.dataset[idx][i][:left_parenthesis_index].split(' - ')[1:])
-                            text += f"[{self.dataset[idx][i][:left_parenthesis_index].split(' - ')[0]}] {temp} "
+            for i in range(7, len(self.dataset[idx])):
+                if self.dataset[idx][i] != '':
+                    left_parenthesis_index = self.dataset[idx][i].rfind('(')
+                    if tagging_type == 'Relation' and i == 7:
+                        text += " [Event1] " + "".join(self.dataset[idx][i][:left_parenthesis_index])
+                    elif tagging_type == 'Relation' and i == 8:
+                        text += " [Event2] " + "".join(self.dataset[idx][i][:left_parenthesis_index])
+                    elif tagging_type == 'Event':
+                        temp = " ".join(self.dataset[idx][i][:left_parenthesis_index].split(' - ')[1:])
+                        text += f"[{self.dataset[idx][i][:left_parenthesis_index].split(' - ')[0]}] {temp} "
             text += "[END]"
 
         encoded_sent = enconder(self.tokenizer, 768, text = text)
@@ -258,6 +258,7 @@ class Ranking_dataset:
             dict['attention_mask'] = attention_mask
             dict['labels'] = target_ids
             self.datasets.append(dict)
+            self.paragraph.append(self.dataset[idx][1])
 
         return     
     

@@ -381,15 +381,37 @@ class eval_Question:
     def SentT(self):
         sent_score = 0
         record = []
+        bleu_score = [0, 0, 0, 0]
         for idx in tqdm(self.pred_dict):
             pred = self.pred_dict[idx]
             tar = self.tar_dict[idx]
+
+            result = metric.compute(predictions=[pred['Question 1']], references=[tar['Question 1']])
+            bleu_1 = round(result['precisions'][0], 2)
+            bleu_2 = round(result['precisions'][1], 2)
+            bleu_3 = round(result['precisions'][2], 2)
+            bleu_4 = round(result['precisions'][3], 2)
+            bleu_score[0] += bleu_1
+            bleu_score[1] += bleu_2
+            bleu_score[2] += bleu_3
+            bleu_score[3] += bleu_4
+
             result = self.cal_sentT(pred, tar)
             sent_score += result
-            data = np.concatenate((self.content[idx], [result]))
+            data = np.concatenate((self.content[idx], [bleu_1, bleu_2, bleu_3, bleu_4, result]))
             record.append(data)
-        return record, sent_score
+        return record, sent_score, bleu_score
     
+    def cal_result(self, pred_dict, tar_dict):
+        result = metric.compute(predictions=[pred_dict['Event 1']], references=[tar_dict['Event 1']])
+        result2 = metric.compute(predictions=[pred_dict['Event 2']], references=[tar_dict['Event 2']])
+        result3 = metric.compute(predictions=[pred_dict['Event 1']], references=[tar_dict['Event 2']])
+        result4 = metric.compute(predictions=[pred_dict['Event 2']], references=[tar_dict['Event 1']])
+        if result['bleu'] + result2['bleu'] >= result3['bleu'] + result4['bleu']:
+            return result, result2
+        else:
+            return result3, result4
+
     def cal_sentT(self, pred_dict, tar_dict):
         model = SentenceTransformer('multi-qa-MiniLM-L6-cos-v1')
         score = 0
@@ -450,7 +472,11 @@ if __name__ == '__main__':
             save_csv(record, path + 'score.csv', args.Generation)
     elif args.Generation == 'question' :
         eval = eval_Question(path + f'{args.Generation}.csv')
-        record, s_score = eval.SentT()
+        record, s_score, bleu_score = eval.SentT()
         num = len(eval.dataset)
+        print("BLEU-1 : ", round(bleu_score[0]/num, 2))
+        print("BLEU-2 : ", round(bleu_score[1]/num, 2))
+        print("BLEU-3 : ", round(bleu_score[2]/num, 2))
+        print("BLEU-4 : ", round(bleu_score[3]/num, 2))
         print("SentenceTransformer : ", round(s_score/num, 2))
         save_csv(record, path + 'score.csv', args.Generation)

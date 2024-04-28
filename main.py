@@ -44,7 +44,7 @@ def main(batch_size = 4,
         train_data = Ranking_dataset('data/Ranking/train_ranking.csv', model_name, tokenizer, max_len)
         valid_data = Ranking_dataset('data/Ranking/valid_ranking.csv', model_name, tokenizer, max_len)
         test_data = Ranking_dataset('data/Ranking/test_ranking.csv', model_name, tokenizer, max_len)
-    
+
     if not test_mode:
         training(model, tokenizer, train_data, valid_data, path_save_model, epochs=epochs, batch_size = batch_size)
         # train_model(model, train_dataloader, valid_dataloader, device, tokenizer=tokenizer, epochs=epochs, path_save_model = best_pth)

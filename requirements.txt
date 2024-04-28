@@ -16,9 +16,9 @@ openai
 
 
 #allennlp
-spacy==3.3.3
+#spacy==3.3.3
 # python -m spacy download en_core_web_sm
-allennlp
---pre allennlp-models
+#allennlp
+#--pre allennlp-models
 
 #下載完 allennlp 要重新下載 cuda, transformers
