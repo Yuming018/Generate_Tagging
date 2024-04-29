@@ -8,6 +8,7 @@ from tqdm import tqdm
 import argparse
 import torch
 import csv
+import os
 from collections import defaultdict
 from transformers import logging
 logging.set_verbosity_error()
@@ -16,9 +17,11 @@ fairytale_qa_type = ['action', 'outcome resolution', 'causal relationship',
                  'prediction', 'setting', 'feeling', 'character']
 
 def save_csv(record, path):
+    if not os.path.isdir('csv'):
+        os.mkdir('csv')
     row = ['Paragraph', 'Context', 'Prediction', 'Reference', 'Input_text', 'Question type', 'Question_difficulty', 'SentenceBert', 'Event graph', 'Relation graph']
 
-    with open(path, 'w', newline = '', encoding='utf-8') as csvfile:
+    with open('csv/'+path, 'w', newline = '', encoding='utf-8') as csvfile:
         writer = csv.writer(csvfile, delimiter = ',')
         writer.writerow(row)
         for i in range(len(record['context'])):

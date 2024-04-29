@@ -41,8 +41,8 @@ def DistilBERT():
 
 def deberta():
     model_name = "microsoft/deberta-v3-base"
-    id2label = {0: False, 1: True}
-    label2id = {False: 0, True: 1}
+    id2label = {0: 'Can not answer', 1: 'Can answer'}
+    label2id = {'Can not answer': 0, 'Can answer': 1}
 
     tokenizer = AutoTokenizer.from_pretrained(model_name)
     model = AutoModelForSequenceClassification.from_pretrained(model_name, num_labels=2, id2label=id2label, label2id=label2id)

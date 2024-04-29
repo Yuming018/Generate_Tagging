@@ -8,6 +8,7 @@ from collections import defaultdict
 from sklearn.metrics import precision_score, recall_score, f1_score, classification_report, confusion_matrix
 from sentence_transformers import SentenceTransformer, util
 from helper import checkdir
+from datasets import load_metric
 
 metric = evaluate.load("bleu")
 
@@ -423,6 +424,28 @@ class eval_Question:
                 score = max(score, round(result[0][0].item(), 2))
         
         return score 
+    
+class eval_Ranking:
+    def __init__(self, path) -> None:
+        self.pred, self.label = [], []
+        self.dataset = read_data(path)
+        self.procee_data()
+
+    def procee_data(self):
+        label2id = {'Can not answer': 0, 'Can answer': 1}
+        for idx in range(len(self.dataset)):
+            self.pred.append(label2id[self.dataset[idx][2]])
+            self.label.append(label2id[self.dataset[idx][3]])
+        return
+    
+    def compute_metrics(self):
+        load_accuracy = load_metric("accuracy")
+        load_f1 = load_metric("f1")
+        accuracy = load_accuracy.compute(predictions=self.pred, references=self.label)["accuracy"]
+        f1 = load_f1.compute(predictions=self.pred, references=self.label)["f1"]
+        print("Accuracy : ", accuracy)
+        print("F1 : ", f1)
+        return 
          
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -431,11 +454,11 @@ if __name__ == '__main__':
                         type=str,
                         default='Event')
     parser.add_argument('--Generation', '-g',
-                        choices=["tagging", "question"],
+                        choices=["tagging", "question", "ranking"],
                         type=str,
                         default='tagging')
     parser.add_argument('--Model', '-m',
-                        choices=['Mt0', 'T5', 'Bart', 'roberta', 'gemma', 'flant5', 'gemini', 'openai'],
+                        choices=['Mt0', 'T5', 'Bart', 'roberta', 'gemma', 'flant5', 'gemini', 'openai', 'distil', 'deberta'],
                         type=str,
                         default='Mt0')
     args = parser.parse_args()
@@ -470,7 +493,7 @@ if __name__ == '__main__':
             print("SentenceTransformer : ", round(s_score['label']/num, 2))
             print("SentenceTransformer non_label : ", round(s_score['non_label']/num, 2))
             save_csv(record, path + 'score.csv', args.Generation)
-    elif args.Generation == 'question' :
+    elif args.Generation == 'question':
         eval = eval_Question(path + f'{args.Generation}.csv')
         record, s_score, bleu_score = eval.SentT()
         num = len(eval.dataset)
@@ -480,3 +503,8 @@ if __name__ == '__main__':
         print("BLEU-4 : ", round(bleu_score[3]/num, 2))
         print("SentenceTransformer : ", round(s_score/num, 2))
         save_csv(record, path + 'score.csv', args.Generation)
+    elif args.Generation == 'ranking':
+        if args.Model != 'distil' and args.Model != 'deberta':
+            raise TypeError("Ranking model 只包含 distil, deberta")
+        eval = eval_Ranking(path + f'{args.Generation}.csv')
+        eval.compute_metrics()

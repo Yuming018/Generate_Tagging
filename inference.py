@@ -53,15 +53,17 @@ def cls_inference(model_name, model, tokenizer, test_dataloader, test_data_paprg
     model_path = check_checkpoint(path_save_model)
     model = AutoModelForSequenceClassification.from_pretrained(model_path)
 
+    id2label = {0: 'Can not answer', 1: 'Can answer'}
     prediction, target, context, paragraph = [], [], [], []
     model.to(device)
     for data, para in tqdm(zip(test_dataloader, test_data_paprgraph)):
-        
         input_ids, label = data['input_ids'], data['label']
         input_ids = torch.tensor(input_ids).to(device)
         output = model(input_ids=input_ids.unsqueeze(0)).logits.argmax().item()
-        prediction.append(model.config.id2label[output])
-        target.append(model.config.id2label[label])
+        print(input_ids.unsqueeze(0))
+        input()
+        prediction.append(id2label[output])
+        target.append(id2label[label])
         context.append(tokenizer.decode(input_ids, skip_special_tokens=True))
         paragraph.append(para)
 

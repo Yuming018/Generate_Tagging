@@ -5,7 +5,6 @@ from inference import seq2seq_inference, cls_inference
 from helper import checkdir
 import argparse
 import torch
-from torch.utils.data import DataLoader
 
 def main(batch_size = 4,
          epochs=10,

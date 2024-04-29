@@ -15,16 +15,19 @@ gdown 1cvINJ5tzKX7pcPgm5XVLCncfr5ybk49w
 unzip data.zip
 ```
 
-
 ## 訓練
 ### 指令註釋
 ``` 
-python main.py -e 訓練幾次 -b 批次數 -p 子圖片的大小 -tm 是否為測試階段
+python main.py -e 訓練幾次 -b 批次數 -g 訓練甚麼資料 -m 訓練哪種模型 -tm 是否為測試階段
 ```
 
 ## File Structure
 ```
 |--- data
+|   |--- Ranking
+|      |--- train.csv
+|      |--- valid.csv
+|      |--- test.csv
 |   |--- train.csv
 |   |--- valid.csv
 |   |--- test.csv
@@ -34,10 +37,17 @@ python main.py -e 訓練幾次 -b 批次數 -p 子圖片的大小 -tm 是否為�
 |--- main.py
 |--- model.py
 |--- training.py
+|--- helper.py
+|--- eval_pred.py
+|--- visual_data.py
+|--- LLM_generate.py
 |
-|--- test_model
-|   |--- main.csv
-|   |--- knowledge_graph.csv
+|--- combined extracted information
+|   |--- main.py
+|   |--- knowledge_graph.py
+|   |--- generation.py
+|   |--- dataloader.py
+|   |--- coreference_resolution.py
 |
 |--- requirements.txt
 |--- README.md
