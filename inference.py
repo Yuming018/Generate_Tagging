@@ -60,8 +60,6 @@ def cls_inference(model_name, model, tokenizer, test_dataloader, test_data_paprg
         input_ids, label = data['input_ids'], data['label']
         input_ids = torch.tensor(input_ids).to(device)
         output = model(input_ids=input_ids.unsqueeze(0)).logits.argmax().item()
-        print(input_ids.unsqueeze(0))
-        input()
         prediction.append(id2label[output])
         target.append(id2label[label])
         context.append(tokenizer.decode(input_ids, skip_special_tokens=True))
