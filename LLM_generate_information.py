@@ -1,11 +1,10 @@
-import google.generativeai as genai
-from openai import OpenAI
+
 import configparser
 import argparse
 import pandas as pd
 import csv
 from tqdm import tqdm
-from helper import checkdir, text_segmentation
+from helper import checkdir, text_segmentation, gptapi, geminiapi
 
 config = configparser.ConfigParser()
 config.read('config.ini')
@@ -80,57 +79,6 @@ prompt = {
         Result : [Relation 1] Temporal - isBefore  [Event1] the whole fish tribe came back very tired from a hunting expedition [Event2] looked about for a nice , cool spot in which to pitch their camp [END] \
         Relation type definition : "
 }
-
-def gptapi(content, temperature = 0.5):
-    client = OpenAI(
-        api_key = config['key']['openai_api_key'],
-        organization = config['key']['Organization_ID']
-    )
-    
-    completion = client.chat.completions.create(
-        model="gpt-3.5-turbo",
-        temperature = temperature,
-        messages=[
-            {"role": "system", "content": "You are a helpful assistant."},
-            {"role": "user", "content": content}],
-        )
-    return completion.choices[0].message.content
-
-def geminiapi(content):
-    genai.configure(api_key=config['key']['google_api_key'])
-    safetySettings =  [
-                {
-                    "category": "HARM_CATEGORY_DANGEROUS",
-                    "threshold": "BLOCK_NONE",
-                },
-                {
-                    "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
-                    "threshold": "BLOCK_NONE"
-                },
-                {
-                    "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
-                    "threshold": "BLOCK_NONE"
-                },
-                {
-                    "category": "HARM_CATEGORY_HATE_SPEECH",
-                    "threshold": "BLOCK_NONE"
-                },
-                {
-                    "category": "HARM_CATEGORY_HARASSMENT",
-                    "threshold": "BLOCK_NONE"
-                },
-            ]
-    generationConfig =  {
-        "temperature": 0, # 控制輸出的隨機性
-        "maxOutputTokens": 500
-        # "topP": 0.8,
-        # "topK": 10
-    }
-
-    model = genai.GenerativeModel('gemini-pro', safety_settings = safetySettings)    
-    response = model.generate_content(content)
-
-    return response.text
 
 class Dataset:
     def __init__(self, path, event_or_relation) -> None:
@@ -265,7 +213,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--event_or_relation', '-t', type=str, choices=['Event', 'Relation'], default='Event')
     parser.add_argument('--Generation', '-g', type=str, choices=['tagging', 'question'], default='tagging')
-    parser.add_argument('--Model', '-m', type=str, choices=['openai', 'gemini'], default='gemini')
+    parser.add_argument('--Model', '-m', type=str, choices=['openai', 'gemini'], default='openai')
     args = parser.parse_args()
 
     main(event_or_relation = args.event_or_relation, Generation = args.Generation, model_name = args.Model)

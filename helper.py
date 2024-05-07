@@ -1,5 +1,8 @@
 import os
 import re
+import google.generativeai as genai
+from openai import OpenAI
+import configparser
 
 def checkdir(path_save_model, event_or_relation, Generation, model_name):
     
@@ -75,6 +78,68 @@ def create_prompt(model_name, tagging_type, generate_type, context):
             text = f"[CLS] {context} "
     
     return text
+
+def check_config():
+    config = configparser.ConfigParser()
+    current_directory = os.getcwd()
+    if current_directory.endswith("combined extracted information"):
+        config_path = "../config.ini"
+    else:
+        config_path = "config.ini"
+    config.read(config_path)
+    return config
+
+def gptapi(content, version = 3.5, temperature = 0.5):
+    config = check_config()
+    client = OpenAI(
+        api_key = config['key']['openai_api_key'],
+        organization = config['key']['Organization_ID']
+    )
+    
+    completion = client.chat.completions.create(
+        model=f"gpt-{version}-turbo",
+        temperature = temperature,
+        messages=[
+            {"role": "system", "content": "You are a helpful assistant."},
+            {"role": "user", "content": content}],
+        )
+    return completion.choices[0].message.content
+
+def geminiapi(content, temperature = 0):
+    config = check_config()
+    genai.configure(api_key=config['key']['google_api_key'])
+    safetySettings =  [
+                {
+                    "category": "HARM_CATEGORY_DANGEROUS",
+                    "threshold": "BLOCK_NONE",
+                },
+                {
+                    "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
+                    "threshold": "BLOCK_NONE"
+                },
+                {
+                    "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+                    "threshold": "BLOCK_NONE"
+                },
+                {
+                    "category": "HARM_CATEGORY_HATE_SPEECH",
+                    "threshold": "BLOCK_NONE"
+                },
+                {
+                    "category": "HARM_CATEGORY_HARASSMENT",
+                    "threshold": "BLOCK_NONE"
+                },
+            ]
+    generationConfig =  {
+        "temperature": temperature, # 控制輸出的隨機性
+        "maxOutputTokens": 500
+        # "topP": 0.8,
+        # "topK": 10
+    }
+
+    model = genai.GenerativeModel('gemini-pro', safety_settings = safetySettings)    
+    response = model.generate_content(content)
+    return response.text
 
 if __name__ == '__main__':
     pass
