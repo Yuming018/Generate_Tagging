@@ -141,13 +141,13 @@ def main(model_name = "openai", ranking_model = 'deberta'):
         prompt = f"Help me classify the questions based on the following context and questions into levels of difficulty, categorizing them as Simple, Medium, and Difficult questions. \
             Difficulty levels are determined by the distance across paragraphs as a reference. \
             For example, when a question and its answer appear in the same sentence, it is classified as an easy question. \
-            When the question and its answer are separated by approximately 1-2 sentences, it is classified as a medium question. \
-            When the question and its answer are separated by approximately 3-4 sentences, it is classified as a hard question. \
+            When the question and its answer are separated by approximately 2-3 sentences, it is classified as a medium question. \
+            When the question and its answer are separated by approximately 4-5 sentences, it is classified as a hard question. \
             And the categorized questions should be exactly the same as the original questions.\
             The context is as follows: '{context}'. The questions are as follows: {all_ques}"
         # prompt = f"幫我依據以下的文章以及問題，把問題進行難度分類，分別分類成簡單的問題，中等的問題以及困難的問題。\
         #     難度分級依照跨段落距離當參考基準，舉例來說，當問題與答案出現在同一個句子中，便把他歸類為簡單問題，\
-        #     當問題與答案相隔的句子大約1~2句話的時候，便把他歸類為中等問題，當問題與答案相隔的句子約為3~4句話的時候，\
+        #     當問題與答案相隔的句子大約2-3句話的時候，便把他歸類為中等問題，當問題與答案相隔的句子約為4-5句話的時候，\
         #     便把他歸類為困難的問題，並且分類出來的問題要跟原始問題一模一樣。文章如下:'{context}', 問題如下 : {all_ques}"
         # try:
 

@@ -60,7 +60,7 @@ def main(model_name = "openai"):
             But the generated questions must have their answers appear in the Context.Context as following: : {context}"
         # prompt = f"幫我依據以下的文章，分別生成出前面三個簡單的問題，中間三個中等的問題，最後三個困難的問題。\
         #     難度分級依照跨段落距離當參考基準，舉例來說，當問題與答案出現在同一個句子中，便把他歸類為簡單問題，\
-        #     當問題與答案相隔的句子大約1~2句話的時候，便把他歸類為中等問題，當問題與答案相隔的鋸子約為3~4句話的時候，\
+        #     當問題與答案相隔的句子大約2-3句話的時候，便把他歸類為中等問題，當問題與答案相隔的鋸子約為4-5句話的時候，\
         #     便把他歸類為困難的問題，但生成的出來問題，答案一定要出現在文章中。文章如下:'{context}'"
         try:
             if model_name == "openai":
