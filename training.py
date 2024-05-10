@@ -116,6 +116,7 @@ def seq2seq_training(model, tokenizer, train_data, valid_data, path_save_model, 
         include_inputs_for_metrics=True,
         lr_scheduler_type="polynomial",
         dataloader_prefetch_factor = None,
+        report_to="none",
     )
 
     collate_fn = DataCollatorForSeq2Seq(

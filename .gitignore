@@ -4,6 +4,7 @@ checkpoints/
 data/
 
 save_model/
+wandb/
 
 *.csv
 config.ini

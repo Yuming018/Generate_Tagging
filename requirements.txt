@@ -9,9 +9,10 @@ matplotlib
 accelerate==0.27.2
 google-generativeai
 openai
+click==8.1.7
 
 #deberta
-protobuf
+protobuf==3.20.0
 sentencepiece
 
 # cuda
