@@ -4,7 +4,7 @@ import google.generativeai as genai
 from openai import OpenAI
 import configparser
 
-def checkdir(path_save_model, event_or_relation, Generation, model_name):
+def checkdir(path_save_model, event_or_relation, Generation, model_name, Answer):
     
     if not os.path.isdir(path_save_model):
         os.mkdir(path_save_model)
@@ -15,7 +15,10 @@ def checkdir(path_save_model, event_or_relation, Generation, model_name):
             os.mkdir(path_save_model)
         path_save_model += '/tagging'
     elif Generation == 'question':
-        path_save_model += '/Question'
+        if Answer:
+            path_save_model += '/QA_pair'
+        elif not Answer:
+            path_save_model += '/Question'
     elif Generation == 'ranking':
         path_save_model += '/Ranking'
     

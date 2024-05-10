@@ -138,9 +138,10 @@ class Extraction_Datasets:
         return self.datasets[idx]
 
 class Question_generation_Datasets:
-    def __init__(self, path, model_name, tokenizer, max_len) -> None:
+    def __init__(self, path, model_name, tokenizer, max_len, Answer) -> None:
         self.path = path
         self.max_len = max_len
+        self.answer = Answer
         self.event_idx, self.realtion_idx = 0, 0
 
         self.model_name = model_name
@@ -222,6 +223,8 @@ class Question_generation_Datasets:
         text = ""
         for idx, story_idx in enumerate(story_list):
             text += f"[Question {idx+1}] {self.dataset[story_idx][2]} "
+            if self.answer:
+                text += f"[Answer {idx+1}] {self.dataset[story_idx][3]} "
         text += "[END]"
         encoded_sent = enconder(self.tokenizer, 128, text = text)
         # print(encoded_sent.get('input_ids'))
@@ -265,12 +268,8 @@ class Ranking_dataset:
         return     
     
     def create_input(self, idx):
-        # text = create_prompt(self.model_name, None, 'ranking', self.dataset[idx][2])
         text = f'{self.dataset[idx][3]}  <SEP>  {self.dataset[idx][2]}'
         encoded_sent = enconder(self.tokenizer, 512, text = text)
-        # print(encoded_sent.get('input_ids'))
-        # print(self.tokenizer.decode(encoded_sent.get('input_ids'), skip_special_tokens=True))   
-        # input()
         return encoded_sent.get('input_ids'), encoded_sent.get('attention_mask'), text
 
     def create_target(self, idx):
