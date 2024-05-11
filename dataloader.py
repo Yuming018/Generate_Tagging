@@ -239,9 +239,10 @@ class Question_generation_Datasets:
         return self.datasets[idx]
 
 class Ranking_dataset:
-    def __init__(self, path, model_name, tokenizer, max_len) -> None:
+    def __init__(self, path, model_name, tokenizer, max_len, Answer) -> None:
         self.path = path
         self.max_len = max_len
+        self.answer = Answer
         self.model_name = model_name
         self.tokenizer = tokenizer
         self.dataset = self.get_data(path)
@@ -268,7 +269,9 @@ class Ranking_dataset:
         return     
     
     def create_input(self, idx):
-        text = f'{self.dataset[idx][3]}  <SEP>  {self.dataset[idx][2]}'
+        text = f'{self.dataset[idx][2]} <SEP> {self.dataset[idx][3]}'
+        if self.answer:
+            text += f' <SEP> {self.dataset[idx][4]} '
         encoded_sent = enconder(self.tokenizer, 512, text = text)
         return encoded_sent.get('input_ids'), encoded_sent.get('attention_mask'), text
 

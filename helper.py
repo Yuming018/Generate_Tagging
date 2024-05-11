@@ -20,7 +20,10 @@ def checkdir(path_save_model, event_or_relation, Generation, model_name, Answer)
         elif not Answer:
             path_save_model += '/Question'
     elif Generation == 'ranking':
-        path_save_model += '/Ranking'
+        if Answer:
+            path_save_model += '/Ranking_w_ans'
+        elif not Answer:
+            path_save_model += '/Ranking'
     
     if not os.path.isdir(path_save_model):
         os.mkdir(path_save_model)

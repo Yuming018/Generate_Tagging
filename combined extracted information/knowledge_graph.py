@@ -27,7 +27,7 @@ event_type = [
     'State - Emotion', 'State - Thought', 'State - Characteristic',
 ]
 
-def create_knowledge_graph(context_type, context, core_context, target, tokenizer, device, model_name, question_type):
+def create_knowledge_graph(gen_answer, context_type, context, core_context, target, tokenizer, device, model_name, question_type):
     """
     根據 Fairytale QA 的問題，判斷文章中的重點段落(core_context)為何
     並以 core_context 生成出 Knowledge graph ，命名為 core_graph
@@ -96,7 +96,7 @@ def create_knowledge_graph(context_type, context, core_context, target, tokenize
     question_set, score_set, text_set, question_difficulty, question_5w1h = [], [], [], [], []
     coreference = corf_resolution(context)
 
-    relation_question, relation_score, relation_text, relation_difficulty = connect_relation_graph(context, Relation_graph, tokenizer, device, target, model_name, question_type)
+    relation_question, relation_score, relation_text, relation_difficulty = connect_relation_graph(gen_answer, context, Relation_graph, tokenizer, device, target, model_name, question_type)
     for question, score, text, difficulty in zip(relation_question, relation_score, relation_text, relation_difficulty):
         if question not in question_set:
             question_set.append(question)
@@ -106,7 +106,7 @@ def create_knowledge_graph(context_type, context, core_context, target, tokenize
             question_5w1h.append('why')
     
     for question_type in question_keyword:
-        event_question, event_score, event_text, event_difficulty = connect_event_graph(context, Event_graph, tokenizer, device, target, model_name, question_type, coreference, new_lines)
+        event_question, event_score, event_text, event_difficulty = connect_event_graph(gen_answer, context, Event_graph, tokenizer, device, target, model_name, question_type, coreference, new_lines)
         for question, score, text, difficulty in zip(event_question, event_score, event_text, event_difficulty):
             if question not in question_set:
                 question_set.append(question)
@@ -131,7 +131,11 @@ def generate_tagging(path_save_model, model_name, text, tokenizer, device):
     #     print('Relation_tagging: ', tagging)
     return tagging
 
-def generate_question(path_save_model, model_name, text, target, tokenizer, device):
+def generate_question(model_name, gen_answer, text, target, tokenizer, device):
+    if gen_answer:
+        path_save_model = f'../save_model/QA_pair/{model_name}/'
+    elif not gen_answer:
+        path_save_model = f'../save_model/question/{model_name}/'
     input_ids = enconder(tokenizer, max_len=768, text=text)
     input_ids = torch.tensor(input_ids.get('input_ids')).to(device)
 
@@ -144,7 +148,7 @@ def generate_question(path_save_model, model_name, text, target, tokenizer, devi
     # print('Target : ', target, '\n')
     return question, score
 
-def connect_event_graph(context, Event_graph, tokenizer, device, target, model_name, question_type, coreference, new_lines):
+def connect_event_graph(gen_answer, context, Event_graph, tokenizer, device, target, model_name, question_type, coreference, new_lines):
     # event_dict = defaultdict(list)
     # for idx in Event_graph:
     #     temp = []
@@ -183,7 +187,7 @@ def connect_event_graph(context, Event_graph, tokenizer, device, target, model_n
                             text += f'[{key}] {entity}'
                 text += '[END]'
                 if have_arg :
-                    event_question, e_score = generate_question(f'../save_model/question/{model_name}/', model_name, text, target, tokenizer, device)
+                    event_question, e_score = generate_question(model_name, gen_answer, text, target, tokenizer, device)
                     event_question_set.append(event_question)
                     event_score.append(e_score)
                     event_text.append(text)
@@ -191,7 +195,7 @@ def connect_event_graph(context, Event_graph, tokenizer, device, target, model_n
             
     return event_question_set, event_score, event_text, event_difficulty
 
-def connect_relation_graph(context, Relation_graph, tokenizer, device, target, model_name, question_type):
+def connect_relation_graph(gen_answer, context, Relation_graph, tokenizer, device, target, model_name, question_type):
     relation_dict = defaultdict(list)
     for idx in Relation_graph:
         if [Relation_graph[idx]['Relation 1'], Relation_graph[idx]['Event2']] not in relation_dict[Relation_graph[idx]['Event1']]:
@@ -225,7 +229,7 @@ def connect_relation_graph(context, Relation_graph, tokenizer, device, target, m
             if event_flow[idx] not in event_flow[idx_2] and event_flow[idx_2] not in event_flow[idx] :
                 text += f'[Relation1] Temporal - the same '
                 text += f'[Event1] {event_flow[idx]} [Event2] why [Event3] {event_flow[idx_2]} [END]'
-                relation_question, r_score = generate_question(f'../save_model/question/{model_name}/', model_name, text, target, tokenizer, device)
+                relation_question, r_score = generate_question(model_name, gen_answer, text, target, tokenizer, device)
                 relation_question_set.append(relation_question)
                 relation_score.append(r_score)
                 relation_text.append(text)
@@ -291,10 +295,10 @@ if __name__ == '__main__':
     # # text += "[Event 1]  State - Characteristic [Msg (Direct)]  i was a pretty little fellow once [Speaker]  they [Trigger_Word]  said [Actor]  they [Direct Object]  what [Place]  to the housekeeper's room [Trigger_Word]  sent [END]"
     # text += "[Event 1] Action - Action Verb [Actor]   the yard dog  [Key]  what [Trigger_Word]  was called [END]"
     # target = "where did the yard-dog used to lie ?"
-    # relation_question, r_score = generate_question(f'../save_model/question/{args.Model}/', args.Model, text, target, tokenizer, device)
+    # relation_question, r_score = generate_question(args.Model, text, target, tokenizer, device)
 
     context = "puck was careful not always to play his tricks in the same place , but visited one village after another , so that everyone trembled lest he should be the next victim . after a bit he grew tired of cowboys and shepherds , and wondered if there was no one else to give him some sport . at length he was told of a young couple who were going to the nearest town to buy all that they needed for setting up house . quite certain that they would forget something which they could not do without , puck waited patiently till they were jogging along in their cart on their return journey . he changed himself into a fly in order to overhear their conversation . for a long time it was very dull -- all about their wedding day next month , and who were to be invited . this led the bride to her wedding dress , and she gave a little scream . ' just think ! oh ! how could i be so stupid ! i have forgotten to buy the different coloured reels of cotton to match my clothes ! ' ' dear , dear ! ' exclaimed the young man . ' that is unlucky . did n't you tell me that the dressmaker was coming in to - morrow ? ' ' yes , i did , ' and then suddenly she gave another little scream , which had quite a different sound from the first . ' look ! look ! '"
     text = create_prompt(args.Model, None, 'question', context)
     text += "[Event 1]  State - Characteristic [Agent]  puck  [Agent]  he [Emotion]  how [Time]  after a bit [END]"
     target = " why did puck decide to play a trick on a couple ? "
-    relation_question, r_score = generate_question(f'../save_model/question/{args.Model}/', args.Model, text, target, tokenizer, device)
+    relation_question, r_score = generate_question(args.Model, text, target, tokenizer, device)

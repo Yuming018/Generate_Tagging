@@ -44,9 +44,9 @@ def main(batch_size = 4,
         test_data = Question_generation_Datasets('data/test.csv', model_name, tokenizer, max_len, Answer)
     elif Generation == 'ranking':
         file_name = path_save_model + 'ranking.csv'
-        train_data = Ranking_dataset('data/Ranking/train_ranking.csv', model_name, tokenizer, max_len)
-        valid_data = Ranking_dataset('data/Ranking/valid_ranking.csv', model_name, tokenizer, max_len)
-        test_data = Ranking_dataset('data/Ranking/test_ranking.csv', model_name, tokenizer, max_len)
+        train_data = Ranking_dataset('data/Ranking/train_ranking.csv', model_name, tokenizer, max_len, Answer)
+        valid_data = Ranking_dataset('data/Ranking/valid_ranking.csv', model_name, tokenizer, max_len, Answer)
+        test_data = Ranking_dataset('data/Ranking/test_ranking.csv', model_name, tokenizer, max_len, Answer)
 
     if not test_mode:
         if Generation == 'tagging' or Generation == 'question':
