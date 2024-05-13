@@ -1,7 +1,7 @@
 import csv
 import torch
 from tqdm import tqdm
-from transformers import GenerationConfig, AutoModelForSeq2SeqLM, AutoModelForCausalLM, AutoModelForSequenceClassification
+from transformers import GenerationConfig, AutoModelForSeq2SeqLM, AutoModelForCausalLM, AutoModelForQuestionAnswering, AutoModelForSequenceClassification
 from peft import PeftConfig, PeftModel
 from helper import check_checkpoint
 
@@ -13,8 +13,8 @@ def seq2seq_inference(model_name, model, tokenizer, test_dataloader, test_data_p
         model = PeftModel.from_pretrained(model, model_path)
     elif model_name == 'T5' or model_name == 'Bart' or model_name == 'flant5' :
         model = AutoModelForSeq2SeqLM.from_pretrained(model_path)
-    elif model_name == 'roberta':
-        model = AutoModelForCausalLM.from_pretrained(model_path)
+    elif model_name == 'bert':
+        model = AutoModelForQuestionAnswering.from_pretrained(model_path)
     elif model_name == 'gemma':
         config = PeftConfig.from_pretrained(model_path)
         model = AutoModelForCausalLM.from_pretrained(config.base_model_name_or_path)

@@ -38,7 +38,7 @@ def pred_data(record, model_name, device, use_answer):
         pred_ques = pred[0].split(']')[1]
         pred_ans = pred[1].split(']')[1]
         if use_answer:
-            text = data[1] + ' <SEP> ' + pred_ques + ' <SEP> ' + pred_ans
+            text = pred_ques + ' <SEP> ' + pred_ans + ' <SEP> ' + data[1]
         elif not use_answer:
             text = pred_ques + ' <SEP> ' + data[1]
         encoded_sent = enconder(tokenizer, 512, text = text)

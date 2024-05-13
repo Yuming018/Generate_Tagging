@@ -19,6 +19,8 @@ def checkdir(path_save_model, event_or_relation, Generation, model_name, Answer)
             path_save_model += '/QA_pair'
         elif not Answer:
             path_save_model += '/Question'
+    elif Generation == 'answer':
+        path_save_model += '/Answer'
     elif Generation == 'ranking':
         if Answer:
             path_save_model += '/Ranking_w_ans'

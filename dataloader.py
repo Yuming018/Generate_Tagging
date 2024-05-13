@@ -238,6 +238,54 @@ class Question_generation_Datasets:
     def __getitem__(self, idx):
         return self.datasets[idx]
 
+class Answer_generation_dataset:
+    def __init__(self, path, model_name, tokenizer, max_len) -> None:
+        self.path = path
+        self.max_len = max_len
+        self.model_name = model_name
+        self.tokenizer = tokenizer
+        self.dataset = self.get_data(path)
+        self.datasets, self.paragraph = [], []
+        self.create_dataset()
+
+    def get_data(self, path):
+        data = pd.read_csv(path)
+        data = data.fillna('')
+        return data.values
+    
+    def create_dataset(self):
+        story_name = ""
+        for idx in tqdm(range(len(self.dataset))):
+            dict = {}
+            current_story_name = self.dataset[idx][4]
+            if current_story_name != story_name:
+                input_ids, attention_mask, text = self.create_input(idx)
+                target_ids = self.create_target(idx)
+                dict['input_ids'] = input_ids
+                dict['attention_mask'] = attention_mask
+                dict['labels'] = target_ids
+                self.datasets.append(dict)
+                self.paragraph.append(self.dataset[idx][1])
+                story_name = current_story_name
+        return     
+    
+    def create_input(self, idx):
+        text = f'[Context] {self.dataset[idx][1]} [Question] {self.dataset[idx][2]} [END]'
+        encoded_sent = enconder(self.tokenizer, 512, text = text)
+        return encoded_sent.get('input_ids'), encoded_sent.get('attention_mask'), text
+
+    def create_target(self, idx):
+        text = self.dataset[idx][3]
+        encoded_sent = enconder(self.tokenizer, 128, text = text)
+        return encoded_sent.get('input_ids')
+
+    def __len__(self):
+        return len(self.datasets)
+
+    def __getitem__(self, idx):
+        return self.datasets[idx]
+
+
 class Ranking_dataset:
     def __init__(self, path, model_name, tokenizer, max_len, Answer) -> None:
         self.path = path

@@ -1,4 +1,4 @@
-from dataloader import Extraction_Datasets, Question_generation_Datasets, Ranking_dataset
+from dataloader import Extraction_Datasets, Question_generation_Datasets, Answer_generation_dataset, Ranking_dataset
 from model import create_model
 from training import train_model, seq2seq_training, cls_training
 from inference import seq2seq_inference, cls_inference
@@ -25,6 +25,8 @@ def main(batch_size = 4,
             print('Generation : ', 'QA_pair')
         elif not Answer:
             print('Generation : ', Generation)
+    elif Generation == 'answer':
+        print('Generation : ', Generation)
     elif Generation == 'ranking':
         print('Generation : ', Generation)
 
@@ -42,20 +44,29 @@ def main(batch_size = 4,
         train_data = Question_generation_Datasets('data/train.csv', model_name, tokenizer, max_len, Answer)
         valid_data = Question_generation_Datasets('data/valid.csv', model_name, tokenizer, max_len, Answer)
         test_data = Question_generation_Datasets('data/test.csv', model_name, tokenizer, max_len, Answer)
+    elif Generation == 'answer':
+        file_name = path_save_model + 'answer.csv'
+        train_data = Answer_generation_dataset('data/train.csv', model_name, tokenizer, max_len)
+        valid_data = Answer_generation_dataset('data/valid.csv', model_name, tokenizer, max_len)
+        test_data = Answer_generation_dataset('data/test.csv', model_name, tokenizer, max_len)
     elif Generation == 'ranking':
         file_name = path_save_model + 'ranking.csv'
         train_data = Ranking_dataset('data/Ranking/train_ranking.csv', model_name, tokenizer, max_len, Answer)
         valid_data = Ranking_dataset('data/Ranking/valid_ranking.csv', model_name, tokenizer, max_len, Answer)
         test_data = Ranking_dataset('data/Ranking/test_ranking.csv', model_name, tokenizer, max_len, Answer)
 
+    print('Train : ', len(train_data))
+    print('Valid : ', len(valid_data))
+    print('Test : ', len(test_data))
+    
     if not test_mode:
-        if Generation == 'tagging' or Generation == 'question':
+        if Generation == 'tagging' or Generation == 'question'  or Generation == 'answer':
             seq2seq_training(model, tokenizer, train_data, valid_data, path_save_model, epochs=epochs, batch_size = batch_size)
         elif Generation == 'ranking':
             cls_training(model, tokenizer, train_data, valid_data, path_save_model, epochs=epochs, batch_size = batch_size)
         # train_model(model, train_dataloader, valid_dataloader, device, tokenizer=tokenizer, epochs=epochs, path_save_model = best_pth)
 
-    if Generation == 'tagging' or Generation == 'question':
+    if Generation == 'tagging' or Generation == 'question' or Generation == 'answer':
         seq2seq_inference(model_name, model, tokenizer, test_data, test_data.paragraph, device, save_file_path = file_name, path_save_model = path_save_model)
     elif Generation == 'ranking':
         cls_inference(model_name, model, tokenizer, test_data, test_data.paragraph, device, save_file_path = file_name, path_save_model = path_save_model)
@@ -67,9 +78,9 @@ if __name__ == '__main__':
     parser.add_argument('--max_len', '-l', type=int, default=512)
     parser.add_argument('--test_mode', '-tm', type=bool, default=False)
     parser.add_argument('--event_or_relation', '-t', type=str, choices=['Event', 'Relation'], default='Event')
-    parser.add_argument('--Generation', '-g', type=str, choices=['tagging', 'question', 'ranking'], default='tagging')
+    parser.add_argument('--Generation', '-g', type=str, choices=['tagging', 'question', 'answer', 'ranking'], default='tagging')
     parser.add_argument('--Answer', '-a', type=bool, default=False)
-    parser.add_argument('--Model', '-m', type=str, choices=['Mt0', 'T5', 'Bart', 'roberta', 'gemma', 'flant5', 'distil', 'deberta'], default='Mt0')
+    parser.add_argument('--Model', '-m', type=str, choices=['Mt0', 'T5', 'bart', 'bert', 'gemma', 'flant5', 'distil', 'deberta'], default='Mt0')
     args = parser.parse_args()
     
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")

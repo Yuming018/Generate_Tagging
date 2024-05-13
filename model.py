@@ -1,5 +1,5 @@
 import torch.nn as nn
-from transformers import AutoTokenizer, AutoModelForSeq2SeqLM, AutoModelForCausalLM, AutoModelForSequenceClassification
+from transformers import AutoTokenizer, AutoModelForSeq2SeqLM, AutoModelForCausalLM, AutoModelForQuestionAnswering, AutoModelForSequenceClassification
 from peft import get_peft_model, PromptTuningInit, PromptTuningConfig, TaskType, LoraConfig
 
 def create_model(model_name, Generation):
@@ -16,10 +16,10 @@ def create_model(model_name, Generation):
         model, tokenizer, model_name = T5()
     elif model_name == 'flant5':
         model, tokenizer, model_name = flant5()
-    elif model_name == 'Bart':
+    elif model_name == 'bart':
         model, tokenizer, model_name = Bart()
-    elif model_name == 'roberta':
-        model, tokenizer, model_name = roberta()
+    elif model_name == 'bert':
+        model, tokenizer, model_name = bert()
     elif model_name == 'gemma':
         model, tokenizer, model_name = gemma()
     elif model_name == 'distil':
@@ -86,11 +86,11 @@ def Bart():
     model = AutoModelForSeq2SeqLM.from_pretrained(model_name)
     return model, tokenizer, model_name
 
-def roberta():
-    model_name = "deepset/roberta-large-squad2"
+def bert():
+    model_name = "google-bert/bert-large-uncased-whole-word-masking-finetuned-squad"
 
     tokenizer = AutoTokenizer.from_pretrained(model_name)
-    model = AutoModelForCausalLM.from_pretrained(model_name)
+    model = AutoModelForQuestionAnswering.from_pretrained(model_name)
     return model, tokenizer, model_name
 
 def gemma():
