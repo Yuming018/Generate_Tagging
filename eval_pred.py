@@ -461,6 +461,9 @@ if __name__ == '__main__':
                         choices=['Mt0', 'T5', 'Bart', 'roberta', 'gemma', 'flant5', 'gemini', 'openai', 'distil', 'deberta'],
                         type=str,
                         default='Mt0')
+    parser.add_argument('--Answer', '-a',
+                        type=bool,
+                        default=False)
     args = parser.parse_args()
     
     if args.Generation == 'tagging' :
@@ -468,7 +471,7 @@ if __name__ == '__main__':
     print('Generation : ', args.Generation)
     print('Model :', args.Model, '\n')
     
-    path = checkdir('save_model', args.event_or_relation, args.Generation, args.Model)
+    path = checkdir('save_model', args.event_or_relation, args.Generation, args.Model, args.Answer)
 
     if args.Generation == 'tagging' :
         if args.event_or_relation == 'Event':

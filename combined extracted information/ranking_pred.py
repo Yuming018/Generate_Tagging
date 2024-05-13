@@ -24,9 +24,9 @@ def save_csv(record, path):
         for data in record:
             writer.writerow(data)
 
-def pred_data(record, model_name, device):
+def pred_data(record, model_name, device, use_answer):
     model, tokenizer = create_model(model_name, 'ranking')
-    path_save_model = checkdir('../save_model', None, 'ranking', model_name)
+    path_save_model = checkdir('../save_model', None, 'ranking', model_name, use_answer)
     model_path = check_checkpoint(path_save_model)
     model = AutoModelForSequenceClassification.from_pretrained(model_path)
     model.to(device)
@@ -36,7 +36,11 @@ def pred_data(record, model_name, device):
     for data in tqdm(record):
         pred = data[2].split('[')[1:-1]
         pred_ques = pred[0].split(']')[1]
-        text = pred_ques + ' <SEP> ' + data[1]
+        pred_ans = pred[1].split(']')[1]
+        if use_answer:
+            text = data[1] + ' <SEP> ' + pred_ques + ' <SEP> ' + pred_ans
+        elif not use_answer:
+            text = pred_ques + ' <SEP> ' + data[1]
         encoded_sent = enconder(tokenizer, 512, text = text)
         input_ids = [encoded_sent.get('input_ids')]
         input_ids = torch.tensor(input_ids).to(device)
@@ -52,13 +56,20 @@ if __name__ == '__main__':
                         choices=['distil', 'deberta'],
                         type=str,
                         default='distil')
+    parser.add_argument('--Answer', '-a',
+                        type=bool,
+                        default=False)
     args = parser.parse_args()
 
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     print(device)
     record = read_data('csv/predict.csv')
-    new_record = pred_data(record, args.Model, device)
+    new_record = pred_data(record, args.Model, device, args.Answer)
     
     if not os.path.isdir('csv'):
         os.mkdir('csv')
-    save_csv(new_record, path = f'csv/{args.Model}_pred.csv')
+    if args.Answer :
+        path = f'csv/{args.Model}_w_ans_pred.csv'
+    else:
+        path = f'csv/{args.Model}_pred.csv'
+    save_csv(new_record, path)
