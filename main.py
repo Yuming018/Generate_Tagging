@@ -1,6 +1,6 @@
 from dataloader import Extraction_Datasets, Question_generation_Datasets, Answer_generation_dataset, Ranking_dataset
 from model import create_model
-from training import train_model, seq2seq_training, cls_training
+from training import seq2seq_training, cls_training
 from inference import seq2seq_inference, cls_inference
 from helper import checkdir
 import argparse

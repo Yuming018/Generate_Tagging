@@ -265,7 +265,7 @@ class Answer_generation_dataset:
                 dict['attention_mask'] = attention_mask
                 dict['labels'] = target_ids
                 self.datasets.append(dict)
-                self.paragraph.append(self.dataset[idx][1])
+                self.paragraph.append(self.dataset[idx][4])
                 story_name = current_story_name
         return     
     
@@ -284,7 +284,6 @@ class Answer_generation_dataset:
 
     def __getitem__(self, idx):
         return self.datasets[idx]
-
 
 class Ranking_dataset:
     def __init__(self, path, model_name, tokenizer, max_len, Answer) -> None:
