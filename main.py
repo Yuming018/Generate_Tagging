@@ -1,6 +1,6 @@
 from dataloader import Extraction_Datasets, Question_generation_Datasets, Answer_generation_dataset, Ranking_dataset
 from model import create_model
-from training import seq2seq_training, cls_training
+from training import seq2seq_training, cls_training, ans_training
 from inference import seq2seq_inference, cls_inference
 from helper import checkdir
 import argparse
@@ -60,8 +60,10 @@ def main(batch_size = 4,
     print('Test : ', len(test_data))
     
     if not test_mode:
-        if Generation == 'tagging' or Generation == 'question'  or Generation == 'answer':
+        if Generation == 'tagging' or Generation == 'question':
             seq2seq_training(model, tokenizer, train_data, valid_data, path_save_model, epochs=epochs, batch_size = batch_size)
+        elif Generation == 'answer':
+            ans_training(model, tokenizer, train_data, valid_data, path_save_model, epochs=epochs, batch_size = batch_size)
         elif Generation == 'ranking':
             cls_training(model, tokenizer, train_data, valid_data, path_save_model, epochs=epochs, batch_size = batch_size)
         # train_model(model, train_dataloader, valid_dataloader, device, tokenizer=tokenizer, epochs=epochs, path_save_model = best_pth)

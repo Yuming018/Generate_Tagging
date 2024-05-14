@@ -213,7 +213,7 @@ class Question_generation_Datasets:
                         text += f"[{self.dataset[idx][i][:left_parenthesis_index].split(' - ')[0]}] {temp} "
             text += "[END]"
 
-        encoded_sent = enconder(self.tokenizer, 768, text = text)
+        encoded_sent = enconder(self.tokenizer, self.max_len, text = text)
         # print(encoded_sent.get('input_ids'))
         # print(self.tokenizer.decode(encoded_sent.get('input_ids'), skip_special_tokens=True))   
         # input()
@@ -271,12 +271,12 @@ class Answer_generation_dataset:
     
     def create_input(self, idx):
         text = f'[Context] {self.dataset[idx][1]} [Question] {self.dataset[idx][2]} [END]'
-        encoded_sent = enconder(self.tokenizer, 512, text = text)
+        encoded_sent = enconder(self.tokenizer, self.max_len, text = text)
         return encoded_sent.get('input_ids'), encoded_sent.get('attention_mask'), text
 
     def create_target(self, idx):
         text = self.dataset[idx][3]
-        encoded_sent = enconder(self.tokenizer, 128, text = text)
+        encoded_sent = enconder(self.tokenizer, 16, text = text)
         return encoded_sent.get('input_ids')
 
     def __len__(self):
