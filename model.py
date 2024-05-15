@@ -20,6 +20,8 @@ def create_model(model_name, Generation):
         model, tokenizer, model_name = Bart()
     elif model_name == 'bert':
         model, tokenizer, model_name = bert()
+    elif model_name == 'roberta':
+        model, tokenizer, model_name = roberta()
     elif model_name == 'gemma':
         model, tokenizer, model_name = gemma()
     elif model_name == 'distil':
@@ -46,6 +48,13 @@ def deberta():
 
     tokenizer = AutoTokenizer.from_pretrained(model_name)
     model = AutoModelForSequenceClassification.from_pretrained(model_name, num_labels=2, id2label=id2label, label2id=label2id)
+    return model, tokenizer, model_name
+
+def roberta():
+    model_name = "deepset/roberta-base-squad2"
+
+    tokenizer = AutoTokenizer.from_pretrained(model_name)
+    model = AutoModelForCausalLM.from_pretrained(model_name)
     return model, tokenizer, model_name
 
 def Mt0():
@@ -80,7 +89,7 @@ def flant5():
     return model, tokenizer, model_name
 
 def Bart():
-    model_name = "facebook/bart-large-cnn"
+    model_name = "facebook/bart-large"
 
     tokenizer = AutoTokenizer.from_pretrained(model_name)
     model = AutoModelForSeq2SeqLM.from_pretrained(model_name)

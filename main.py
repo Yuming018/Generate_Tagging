@@ -82,7 +82,7 @@ if __name__ == '__main__':
     parser.add_argument('--event_or_relation', '-t', type=str, choices=['Event', 'Relation'], default='Event')
     parser.add_argument('--Generation', '-g', type=str, choices=['tagging', 'question', 'answer', 'ranking'], default='tagging')
     parser.add_argument('--Answer', '-a', type=bool, default=False)
-    parser.add_argument('--Model', '-m', type=str, choices=['Mt0', 'T5', 'bart', 'bert', 'gemma', 'flant5', 'distil', 'deberta'], default='Mt0')
+    parser.add_argument('--Model', '-m', type=str, choices=['Mt0', 'T5', 'bart', 'bert', 'gemma', 'flant5', 'roberta', 'distil', 'deberta'], default='Mt0')
     args = parser.parse_args()
     
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")

@@ -6,14 +6,16 @@ peft
 evaluate
 sentence_transformers
 matplotlib
-accelerate==0.27.2
 google-generativeai
 openai
-click==8.1.7
+rouge_score
+
+#click==8.1.7
+#accelerate==0.27.2
 
 #deberta
-protobuf==3.20.0
-sentencepiece
+#protobuf==3.20.0
+#sentencepiece
 
 # cuda
 #pip install torch==1.13.0+cu116 torchvision==0.14.0+cu116 torchaudio==0.13.0 --extra-index-url https://download.pytorch.org/whl/cu116
