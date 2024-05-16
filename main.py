@@ -30,10 +30,10 @@ def main(batch_size = 4,
     elif Generation == 'ranking':
         print('Generation : ', Generation)
 
-    model, tokenizer = create_model(model_name, Generation)
+    path_save_model = checkdir(path_save_model, event_or_relation, Generation, model_name, Answer)
+    model, tokenizer = create_model(model_name, Generation, test_mode, path_save_model)
     model.to(device)
 
-    path_save_model = checkdir(path_save_model, event_or_relation, Generation, model_name, Answer)
     if Generation == 'tagging':
         file_name = path_save_model + 'tagging.csv'
         train_data = Extraction_Datasets('data/train.csv', model_name, tokenizer, event_or_relation = event_or_relation, max_len = max_len)
@@ -75,14 +75,33 @@ def main(batch_size = 4,
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--epoch', '-e', type=int, default=5)
-    parser.add_argument('--batch_size', '-b', type=int, default=2)
-    parser.add_argument('--max_len', '-l', type=int, default=512)
-    parser.add_argument('--test_mode', '-tm', type=bool, default=False)
-    parser.add_argument('--event_or_relation', '-t', type=str, choices=['Event', 'Relation'], default='Event')
-    parser.add_argument('--Generation', '-g', type=str, choices=['tagging', 'question', 'answer', 'ranking'], default='tagging')
-    parser.add_argument('--Answer', '-a', type=bool, default=False)
-    parser.add_argument('--Model', '-m', type=str, choices=['Mt0', 'T5', 'bart', 'bert', 'gemma', 'flant5', 'roberta', 'distil', 'deberta'], default='Mt0')
+    parser.add_argument('--epoch', '-e',
+                        type=int, 
+                        default=5)
+    parser.add_argument('--batch_size', '-b', 
+                        type=int, 
+                        default=2)
+    parser.add_argument('--max_len', '-l', 
+                        type=int, 
+                        default=512)
+    parser.add_argument('--test_mode', '-tm', 
+                        type=bool, 
+                        default=False)
+    parser.add_argument('--event_or_relation', '-t', 
+                        type=str, 
+                        choices=['Event', 'Relation'], 
+                        default='Event')
+    parser.add_argument('--Generation', '-g', 
+                        type=str, 
+                        choices=['tagging', 'question', 'answer', 'ranking'], 
+                        default='tagging')
+    parser.add_argument('--Answer', '-a', 
+                        type=bool, 
+                        default=False)
+    parser.add_argument('--Model', '-m', 
+                        type=str, 
+                        choices=['Mt0', 'T5', 'bart', 'bert', 'gemma', 'flant5', 'roberta', 'distil', 'deberta'], 
+                        default='Mt0')
     args = parser.parse_args()
     
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")

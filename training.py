@@ -62,7 +62,6 @@ def ans_training(model, tokenizer, train_data, valid_data, path_save_model, epoc
         decoded_preds = tokenizer.batch_decode(predictions, skip_special_tokens=True)
         labels = np.where(labels != -100, labels, tokenizer.pad_token_id)
         decoded_labels = tokenizer.batch_decode(labels, skip_special_tokens=True)
-
         model = SentenceTransformer('multi-qa-MiniLM-L6-cos-v1')
         query_embedding = model.encode(decoded_preds)
         passage_embedding = model.encode(decoded_labels)
@@ -71,21 +70,19 @@ def ans_training(model, tokenizer, train_data, valid_data, path_save_model, epoc
         anti_diagonal_sum = sum(result[i, cols - 1 - i] for i in range(rows))
         return {'Sentence_Transformer': anti_diagonal_sum/rows}
     
-    def rouge_metrics(eval_pred):
+    def compute_metrics(eval_pred):
         rouge = evaluate.load("rouge")
         predictions, labels, _ = eval_pred
         decoded_preds = tokenizer.batch_decode(predictions, skip_special_tokens=True)
         labels = np.where(labels != -100, labels, tokenizer.pad_token_id)
         decoded_labels = tokenizer.batch_decode(labels, skip_special_tokens=True)
-
         result = rouge.compute(predictions=decoded_preds, references=decoded_labels, use_stemmer=True)
-
         prediction_lens = [np.count_nonzero(pred != tokenizer.pad_token_id) for pred in predictions]
         result["gen_len"] = np.mean(prediction_lens)
 
         return {k: round(v, 4) for k, v in result.items()}
-
-    args = TrainingArguments(
+    
+    args = Seq2SeqTrainingArguments(
         output_dir= path_save_model + "checkpoints",
         overwrite_output_dir=True,
         per_device_train_batch_size=batch_size,
@@ -94,16 +91,16 @@ def ans_training(model, tokenizer, train_data, valid_data, path_save_model, epoc
         learning_rate=5e-6,
         # optim='adafactor',
         fp16=False,
-        logging_steps=100,
+        logging_steps=50,
         evaluation_strategy="steps",
         eval_steps=100,
         save_strategy="steps",
         save_steps=100, 
         save_total_limit=1, 
         load_best_model_at_end = True,
-        metric_for_best_model = 'eval_loss',
-        # metric_for_best_model = 'eval_rougeL',
-        # predict_with_generate = True,
+        # metric_for_best_model = 'eval_loss',
+        metric_for_best_model = 'eval_rougeL',
+        predict_with_generate = True,
         weight_decay=0.01,
         include_inputs_for_metrics=True,
         lr_scheduler_type="polynomial",
@@ -118,11 +115,11 @@ def ans_training(model, tokenizer, train_data, valid_data, path_save_model, epoc
         pad_to_multiple_of=8
     )
         
-    trainer = Trainer(
+    trainer = Seq2SeqTrainer(
         model=model,
         train_dataset=train_data,
         eval_dataset=valid_data,
-        # compute_metrics=Sen_T_metric,
+        compute_metrics=compute_metrics,
         args=args,
         data_collator=collate_fn,
         tokenizer=tokenizer,

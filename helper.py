@@ -54,7 +54,7 @@ def enconder(tokenizer, max_len=256, text = ''):
         text = text,  
         add_special_tokens=True,
         truncation=True,  
-        padding = 'max_length',   
+        # padding = 'max_length',   
         max_length = max_len,        
         #return_tensors='pt',           
         return_attention_mask=True      

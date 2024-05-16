@@ -6,21 +6,8 @@ from peft import PeftConfig, PeftModel
 from helper import check_checkpoint
 
 def seq2seq_inference(model_name, model, tokenizer, test_dataloader, test_data_paprgraph, device, save_file_path, path_save_model):
-    model_path = check_checkpoint(path_save_model)
-    if model_name == "Mt0":
-        config = PeftConfig.from_pretrained(model_path)
-        model = AutoModelForSeq2SeqLM.from_pretrained(config.base_model_name_or_path)
-        model = PeftModel.from_pretrained(model, model_path)
-    elif model_name == 'T5' or model_name == 'Bart' or model_name == 'flant5' :
-        model = AutoModelForSeq2SeqLM.from_pretrained(model_path)
-    elif model_name == 'bert':
-        model = AutoModelForQuestionAnswering.from_pretrained(model_path)
-    elif model_name == 'gemma':
-        config = PeftConfig.from_pretrained(model_path)
-        model = AutoModelForCausalLM.from_pretrained(config.base_model_name_or_path)
-        model = PeftModel.from_pretrained(model, model_path)
 
-    tagging_generation_config = GenerationConfig(
+    generation_config = GenerationConfig(
         max_length=100,
         early_stopping=False,
         decoder_start_token_id=0,
@@ -40,9 +27,11 @@ def seq2seq_inference(model_name, model, tokenizer, test_dataloader, test_data_p
     for data, para in tqdm(zip(test_dataloader, test_data_paprgraph)):
         input_ids, label = data['input_ids'], data['labels']
         input_ids = torch.tensor(input_ids).to(device)
-        output = model.generate(input_ids=input_ids.unsqueeze(0), generation_config=tagging_generation_config)
+        output = model.generate(input_ids=input_ids.unsqueeze(0), max_new_tokens=100)
         prediction.append(tokenizer.decode(output[0], skip_special_tokens=True))
-        # print(tokenizer.decode(output[0], skip_special_tokens=True))
+        print(tokenizer.decode(output[0], skip_special_tokens=True))
+        print(tokenizer.decode(input_ids, skip_special_tokens=True))
+        input()
         target.append(tokenizer.decode(label, skip_special_tokens=True))
         context.append(tokenizer.decode(input_ids, skip_special_tokens=True))
         paragraph.append(para)
@@ -50,8 +39,6 @@ def seq2seq_inference(model_name, model, tokenizer, test_dataloader, test_data_p
     save_csv(prediction, target, context, paragraph, save_file_path)
 
 def cls_inference(model_name, model, tokenizer, test_dataloader, test_data_paprgraph, device, save_file_path, path_save_model):
-    model_path = check_checkpoint(path_save_model)
-    model = AutoModelForSequenceClassification.from_pretrained(model_path)
 
     id2label = {0: 'Can not answer', 1: 'Can answer'}
     prediction, target, context, paragraph = [], [], [], []

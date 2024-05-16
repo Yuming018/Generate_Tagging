@@ -272,11 +272,14 @@ class Answer_generation_dataset:
     def create_input(self, idx):
         text = f'{self.dataset[idx][2]} <SEP> {self.dataset[idx][1]} '
         encoded_sent = enconder(self.tokenizer, self.max_len, text = text)
+        # print(encoded_sent.get('input_ids'))
         return encoded_sent.get('input_ids'), encoded_sent.get('attention_mask'), text
 
     def create_target(self, idx):
         text = self.dataset[idx][3]
-        encoded_sent = enconder(self.tokenizer, 512, text = text)
+        encoded_sent = enconder(self.tokenizer, 256, text = text)
+        # print(encoded_sent.get('input_ids'))
+        # input()
         return encoded_sent.get('input_ids')
 
     def __len__(self):
