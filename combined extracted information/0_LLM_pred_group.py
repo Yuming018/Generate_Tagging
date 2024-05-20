@@ -117,8 +117,8 @@ def save_csv(record, path):
 
 def main(model_name = "openai", ranking_model = 'deberta'):
     store_record = defaultdict(list)
-    our_dataset = get_data(f'csv/{ranking_model}_pred.csv')
-    llm_dataset = get_data(f'csv/{model_name}.csv')
+    our_dataset = get_data(f'csv/2_{ranking_model}_pred.csv')
+    llm_dataset = get_data(f'csv/0_{model_name}_generate.csv')
 
     all_record, our_record = process_our_dataset(our_dataset)
     all_record, llm_record = process_llm_dataset(llm_dataset, all_record)
@@ -172,7 +172,7 @@ def main(model_name = "openai", ranking_model = 'deberta'):
         #     logging.error(f"An error occurred: {e}")
         #     print(f"An error occurred: {e}")
 
-    save_csv(store_record, f"csv/final.csv")
+    save_csv(store_record, f"csv/0_Group_pred.csv")
     return
 
 if __name__ == '__main__':

@@ -11,7 +11,12 @@ def create_model(model_name, Generation, test_mode, path_save_model):
         if model_name == 'distil' and model_name != 'deberta':
             raise TypeError(f"{Generation} model 不包含 distil, deberta")
 
-    model_path = check_checkpoint(path_save_model)
+    if test_mode:
+        model_path = check_checkpoint(path_save_model)
+    elif not test_mode:
+        model_path = None
+
+        
     if model_name == 'Mt0':
         model, tokenizer, model_name = Mt0(test_mode, model_path)
     elif model_name == 'T5':

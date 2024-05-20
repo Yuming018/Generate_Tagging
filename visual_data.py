@@ -120,7 +120,7 @@ def display_histogram(event_or_relation, train_data, valid_data, test_data):
     train_keys, train_values = list(train_data.keys()), list(train_data.values())
     valid_keys, valid_values = list(valid_data.keys()), list(valid_data.values())
     test_keys, test_values = list(test_data.keys()), list(test_data.values())
-    
+
     bar_width = 0.25
     color_train = 'blue'
     color_valid = 'orange'
@@ -131,16 +131,22 @@ def display_histogram(event_or_relation, train_data, valid_data, test_data):
     plt.bar([key + bar_width for key in test_keys], test_values, width=bar_width, color=color_test, label='Test data', edgecolor='black')
 
     for i, value in enumerate(train_values):
-        plt.text(train_keys[i] - bar_width, value , str(value), ha='center', va='bottom', color=color_train)
+        plt.text(train_keys[i] - bar_width, value + 0.01, f'{value:.2f}', ha='center', va='bottom', color=color_train)
 
     for i, value in enumerate(valid_values):
-        plt.text(valid_keys[i], value + 0.025, str(value), ha='center', va='bottom', color=color_valid)
+        plt.text(valid_keys[i], value + 0.01, f'{value:.2f}', ha='center', va='bottom', color=color_valid)
 
     for i, value in enumerate(test_values):
-        plt.text(test_keys[i] + bar_width, value, str(value), ha='center', va='bottom', color=color_test)
+        plt.text(test_keys[i] + bar_width, value + 0.01, f'{value:.2f}', ha='center', va='bottom', color=color_test)
+
     
-    x_ticks = list(range(1, max(max(train_keys), max(valid_keys), max(test_keys)) + 1))
+    x_ticks = sorted(set(train_keys + valid_keys + test_keys))
     plt.xticks(x_ticks)
+
+    # 設置 xy 軸範圍
+    plt.xlim(min(x_ticks) - 0.5, max(x_ticks) + 0.5)
+    plt.ylim(0, 1.1)  
+    
     plt.title(f'{event_or_relation} Tagging per Question')
     plt.xlabel('Tagging per Question')
     plt.ylabel('Question count')
@@ -162,9 +168,9 @@ if __name__ == '__main__':
         valid_data = Question_Datasets('data/valid.csv')
         test_data = Question_Datasets('data/test.csv')
 
-
     train_count_data = visualize('Train', train_data.vis_data, train_data.count_data)
     valid_count_data = visualize('Valid', valid_data.vis_data, valid_data.count_data)
     test_count_data = visualize('Test', test_data.vis_data, test_data.count_data)
 
+    print(train_count_data)
     display_histogram(args.event_or_relation, train_count_data, valid_count_data, test_count_data)

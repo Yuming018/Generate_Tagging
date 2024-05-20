@@ -13,10 +13,10 @@ file_handler = logging.FileHandler('error.log')
 file_handler.setLevel(logging.ERROR)
 
 def get_data(path):
-        data = pd.read_csv(path)
-        # data = data.drop(columns=['Event graph', 'Relation graph', 'Input_text', 'SentenceBert'])
-        data = data.fillna('')
-        return data.values
+    data = pd.read_csv(path)
+    # data = data.drop(columns=['Event graph', 'Relation graph', 'Input_text', 'SentenceBert'])
+    data = data.fillna('')
+    return data.values
 
 def save_csv(record, path):
     row = ['Paragraph', 'Content', 'Difficulty level','Prediction']
@@ -101,7 +101,7 @@ def main(model_name = "openai"):
         if temp == 5:
             break
 
-    save_csv(record, f"csv/{model_name}.csv")
+    save_csv(record, f"csv/0_{model_name}_generate.csv")
     return
 
 if __name__ == '__main__':

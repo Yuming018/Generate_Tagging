@@ -53,7 +53,7 @@ def main(device = 'cpu',
             record['input_text'].append(text)
             record['question_difficulty'].append(difficulty)
             record['question_5w1h'].append(q_5w1h)
-        save_csv(record, path = 'csv/predict.csv')
+        save_csv(record, path = 'csv/1_predict.csv')
         count += 1
         if count > 5:
             break

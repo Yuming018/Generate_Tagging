@@ -40,7 +40,7 @@ def judge_pred(response):
     
 def main(model_name = "openai", ranking_model = 'deberta'):
     record = []
-    dataset = get_data(f'csv/{ranking_model}_pred.csv')
+    dataset = get_data(f'csv/2_{ranking_model}_pred.csv')
 
     para = dataset[0][0]
     for data in tqdm(dataset):
@@ -95,7 +95,7 @@ def main(model_name = "openai", ranking_model = 'deberta'):
             data.insert(8, None)
         record.append(data)
 
-    save_csv(record, f"csv/test.csv")
+    save_csv(record, f"csv/3_LLM_pred.csv")
     return
 
 if __name__ == '__main__':

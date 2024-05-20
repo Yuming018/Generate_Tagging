@@ -138,10 +138,10 @@ class Extraction_Datasets:
         return self.datasets[idx]
 
 class Question_generation_Datasets:
-    def __init__(self, path, model_name, tokenizer, max_len, Answer) -> None:
+    def __init__(self, path, model_name, tokenizer, max_len, use_Answer) -> None:
         self.path = path
         self.max_len = max_len
-        self.answer = Answer
+        self.use_Answer = use_Answer
         self.event_idx, self.realtion_idx = 0, 0
 
         self.model_name = model_name
@@ -223,7 +223,7 @@ class Question_generation_Datasets:
         text = ""
         for idx, story_idx in enumerate(story_list):
             text += f"[Question {idx+1}] {self.dataset[story_idx][2]} "
-            if self.answer:
+            if self.use_Answer:
                 text += f"[Answer {idx+1}] {self.dataset[story_idx][3]} "
         text += "[END]"
         encoded_sent = enconder(self.tokenizer, 128, text = text)
@@ -277,7 +277,7 @@ class Answer_generation_dataset:
 
     def create_target(self, idx):
         text = self.dataset[idx][3]
-        encoded_sent = enconder(self.tokenizer, 256, text = text)
+        encoded_sent = enconder(self.tokenizer, 64, text = text)
         # print(encoded_sent.get('input_ids'))
         # input()
         return encoded_sent.get('input_ids')
@@ -289,10 +289,10 @@ class Answer_generation_dataset:
         return self.datasets[idx]
 
 class Ranking_dataset:
-    def __init__(self, path, model_name, tokenizer, max_len, Answer) -> None:
+    def __init__(self, path, model_name, tokenizer, max_len, use_Answer) -> None:
         self.path = path
         self.max_len = max_len
-        self.answer = Answer
+        self.use_Answer = use_Answer
         self.model_name = model_name
         self.tokenizer = tokenizer
         self.dataset = self.get_data(path)
@@ -319,9 +319,9 @@ class Ranking_dataset:
         return     
     
     def create_input(self, idx):
-        if self.answer:
+        if self.use_Answer:
             text = f'{self.dataset[idx][3]} <SEP> {self.dataset[idx][4]} <SEP> {self.dataset[idx][2]}'
-        elif not self.answer:
+        elif not self.use_Answer:
             text = f'{self.dataset[idx][3]} <SEP> {self.dataset[idx][2]}'
         encoded_sent = enconder(self.tokenizer, 512, text = text)
         return encoded_sent.get('input_ids'), encoded_sent.get('attention_mask'), text

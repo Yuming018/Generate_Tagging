@@ -63,13 +63,13 @@ if __name__ == '__main__':
 
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     print(device)
-    record = read_data('csv/predict.csv')
+    record = read_data('csv/1_predict.csv')
     new_record = pred_data(record, args.Model, device, args.Answer)
     
     if not os.path.isdir('csv'):
         os.mkdir('csv')
     if args.Answer :
-        path = f'csv/{args.Model}_w_ans_pred.csv'
+        path = f'csv/2_{args.Model}_w_ans_pred.csv'
     else:
-        path = f'csv/{args.Model}_pred.csv'
+        path = f'csv/2_{args.Model}_pred.csv'
     save_csv(new_record, path)
