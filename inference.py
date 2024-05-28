@@ -1,9 +1,7 @@
 import csv
 import torch
 from tqdm import tqdm
-from transformers import GenerationConfig, AutoModelForSeq2SeqLM, AutoModelForCausalLM, AutoModelForQuestionAnswering, AutoModelForSequenceClassification
-from peft import PeftConfig, PeftModel
-from helper import check_checkpoint
+from transformers import GenerationConfig
 
 def seq2seq_inference(model_name, model, tokenizer, test_dataloader, test_data_paprgraph, device, save_file_path, path_save_model):
 

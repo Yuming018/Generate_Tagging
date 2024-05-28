@@ -1,7 +1,7 @@
 import sys 
 sys.path.append("..") 
 from model import create_model
-from helper import enconder, check_checkpoint, checkdir
+from helper import enconder, checkdir
 
 import pandas as pd
 import argparse
@@ -9,7 +9,6 @@ import csv
 import torch
 import os
 from tqdm import tqdm
-from transformers import AutoModelForSequenceClassification
 
 def read_data(path):
     data = pd.read_csv(path, index_col = False, encoding_errors = 'ignore')
@@ -25,10 +24,9 @@ def save_csv(record, path):
             writer.writerow(data)
 
 def pred_data(record, model_name, device, use_answer):
-    model, tokenizer = create_model(model_name, 'ranking')
-    path_save_model = checkdir('../save_model', None, 'ranking', model_name, use_answer)
-    model_path = check_checkpoint(path_save_model)
-    model = AutoModelForSequenceClassification.from_pretrained(model_path)
+
+    path_save_model = checkdir('../save_model', event_or_relation = None, Generation = 'ranking', model_name = model_name, gen_answer = use_answer)
+    model, tokenizer = create_model(model_name, 'ranking',  test_mode = True, path_save_model = path_save_model)
     model.to(device)
 
     id2label = {0: 'Can not answer', 1: 'Can answer'}
@@ -59,17 +57,18 @@ if __name__ == '__main__':
     parser.add_argument('--Answer', '-a',
                         type=bool,
                         default=False)
+    parser.add_argument('--Event_count', '-c', type=int, default=2)
     args = parser.parse_args()
 
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     print(device)
-    record = read_data('csv/1_predict.csv')
+    record = read_data(f'csv/1_predict_{args.Event_count}.csv')
     new_record = pred_data(record, args.Model, device, args.Answer)
     
     if not os.path.isdir('csv'):
         os.mkdir('csv')
     if args.Answer :
-        path = f'csv/2_{args.Model}_w_ans_pred.csv'
+        path = f'csv/2_{args.Model}_w_ans_pred_{args.Event_count}.csv'
     else:
-        path = f'csv/2_{args.Model}_pred.csv'
+        path = f'csv/2_{args.Model}_pred_{args.Event_count}.csv'
     save_csv(new_record, path)

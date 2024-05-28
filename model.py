@@ -21,6 +21,10 @@ def create_model(model_name, Generation, test_mode, path_save_model):
         model, tokenizer, model_name = Mt0(test_mode, model_path)
     elif model_name == 'T5':
         model, tokenizer, model_name = T5(test_mode, model_path)
+    elif model_name == 'T5_base':
+        model, tokenizer, model_name = T5_base(test_mode, model_path)
+    elif model_name == 'T5_small':
+        model, tokenizer, model_name = T5_small(test_mode, model_path)
     elif model_name == 'flant5':
         model, tokenizer, model_name = flant5(test_mode, model_path)
     elif model_name == 'bart':
@@ -95,6 +99,26 @@ def Mt0(test_mode, model_path):
 
 def T5(test_mode, model_path):
     model_name = "google-t5/t5-large"
+
+    tokenizer = AutoTokenizer.from_pretrained(model_name)
+    if not test_mode:
+        model = AutoModelForSeq2SeqLM.from_pretrained(model_name)
+    elif test_mode:
+        model = AutoModelForSeq2SeqLM.from_pretrained(model_path)
+    return model, tokenizer, model_name
+
+def T5_base(test_mode, model_path):
+    model_name = "google-t5/t5-base"
+
+    tokenizer = AutoTokenizer.from_pretrained(model_name)
+    if not test_mode:
+        model = AutoModelForSeq2SeqLM.from_pretrained(model_name)
+    elif test_mode:
+        model = AutoModelForSeq2SeqLM.from_pretrained(model_path)
+    return model, tokenizer, model_name
+
+def T5_small(test_mode, model_path):
+    model_name = "google-t5/t5-small"
 
     tokenizer = AutoTokenizer.from_pretrained(model_name)
     if not test_mode:

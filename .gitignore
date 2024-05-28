@@ -7,4 +7,6 @@ save_model/
 wandb/
 
 *.csv
+*.png
+
 config.ini

@@ -1,169 +1,264 @@
 import pandas as pd
 from collections import defaultdict, Counter
 import matplotlib.pyplot as plt
+import argparse
 
 def get_data(path):
     data = pd.read_csv(path)
-    data = data.fillna('')
+    data = data.fillna('')  # 填充空值
     return data.values
 
-def display_question_defficulty_histogram(data):
-    who_keys, who_values = list(data['who'].keys()), list(data['who'].values())
-    where_keys, where_values = list(data['where'].keys()), list(data['where'].values())
-    why_keys, why_values = list(data['why'].keys()), list(data['why'].values())
-    when_keys, when_values = list(data['when'].keys()), list(data['when'].values())
-    what_keys, what_values = list(data['what'].keys()), list(data['what'].values())
-    how_keys, how_values = list(data['how'].keys()), list(data['how'].values())
-    
-    bar_width = 0.12
-    colors = ['blue', 'orange', 'green', 'red', 'purple', 'brown']
+def display_question_defficulty_histogram(data, categories, plt_name, Event_count):  
+    bar_width = 0.15
+    colors = ['blue', 'orange', 'green', 'red']
 
-    categories = ['Easy', 'Medium', 'Hard']
-    index_who = [categories.index(key) for key in who_keys]
-    index_where = [categories.index(key) for key in where_keys]
-    index_why = [categories.index(key) for key in why_keys]
-    index_when = [categories.index(key) for key in when_keys]
-    index_what = [categories.index(key) for key in what_keys]
-    index_how = [categories.index(key) for key in how_keys]
+    # 計算每個問題類別的索引位置
+    group_labels = list(data.keys())
+    index = range(len(group_labels))
 
-    offsets = [-bar_width * 2.5, -bar_width * 1.5, -bar_width * 0.5, bar_width * 0.5, bar_width * 1.5, bar_width * 2.5]
-    plt.bar([i + offsets[0] for i in index_who], who_values, width=bar_width, color=colors[0], label='Who', edgecolor='black')
-    plt.bar([i + offsets[1] for i in index_where], where_values, width=bar_width, color=colors[1], label='Where', edgecolor='black')
-    plt.bar([i + offsets[2] for i in index_why], why_values, width=bar_width, color=colors[2], label='Why', edgecolor='black')
-    plt.bar([i + offsets[3] for i in index_when], when_values, width=bar_width, color=colors[3], label='When', edgecolor='black')
-    plt.bar([i + offsets[4] for i in index_what], what_values, width=bar_width, color=colors[4], label='What', edgecolor='black')
-    plt.bar([i + offsets[5] for i in index_how], how_values, width=bar_width, color=colors[5], label='How', edgecolor='black')
+    max_value = 0
+    for category in categories:
+        category_values = [int(data[group][category]*100) for group in group_labels]
+        max_value = max(max_value, max(category_values))
+    y_max = (max_value // 10 + 1) * 10
 
-    # 添加標籤
-    for i, value in enumerate(who_values):
-        plt.text(index_who[i] + offsets[0], value + 0.01, f'{value:.2f}', ha='center', va='bottom', color=colors[0])
+    for i, category in enumerate(categories):
+        category_values = [int(data[group][category]*100) for group in group_labels]
+        plt.bar(
+            [j + i * bar_width for j in index],
+            category_values,
+            width=bar_width,
+            color=colors[i],
+            label=category,
+            edgecolor='black'
+        )
+        # 添加標籤
+        for j, value in enumerate(category_values):
+            plt.text(j + i * bar_width, value + 0.01, f'{int(value)}', ha='center', va='bottom')
 
-    for i, value in enumerate(where_values):
-        plt.text(index_where[i] + offsets[1], value + 0.01, f'{value:.2f}', ha='center', va='bottom', color=colors[1])
-
-    for i, value in enumerate(why_values):
-        plt.text(index_why[i] + offsets[2], value + 0.01, f'{value:.2f}', ha='center', va='bottom', color=colors[2])
-
-    for i, value in enumerate(when_values):
-        plt.text(index_when[i] + offsets[3], value + 0.01, f'{value:.2f}', ha='center', va='bottom', color=colors[3])
-
-    for i, value in enumerate(what_values):
-        plt.text(index_what[i] + offsets[4], value + 0.01, f'{value:.2f}', ha='center', va='bottom', color=colors[4])
-
-    for i, value in enumerate(how_values):
-        plt.text(index_how[i] + offsets[5], value + 0.01, f'{value:.2f}', ha='center', va='bottom', color=colors[5])
-
-    plt.xticks(range(len(categories)), categories)
+    # 設置 x 軸標籤，使其與問題類別對齊
+    plt.xticks([r + bar_width * 1.5 for r in range(len(group_labels))], group_labels)
 
     # 設置 xy 軸範圍
-    plt.xlim(-0.5, len(categories) - 0.5)
-    plt.ylim(0, 1.1)  
-    
-    plt.title('Analyze')
-    plt.xlabel('Question Difficulty')
-    plt.ylabel('Question count')
+    plt.xlim(-0.5, len(group_labels) - 0.5 + bar_width * 3)
+    plt.ylim(0, y_max)
+
+    plt.title(f'Analyze {Event_count}')
+    plt.xlabel('Question Type')
+    plt.ylabel('The number of events' if 'total' in plt_name else 'Question type')
     plt.legend()
-    plt.savefig('csv/Question type.png')
+    plt.savefig(f'csv/{plt_name}.png')
     # plt.show()
     plt.clf()
 
-def display_question_range_histogram(data):
-    Near_keys, Near_values = list(data['Near'].keys()), list(data['Near'].values())
-    Moderate_keys, Moderate_values = list(data['Moderate'].keys()), list(data['Moderate'].values())
-    Far_keys, Far_values = list(data['Far'].keys()), list(data['Far'].values())
+def display_range_histogram(data, categories, plt_name, Event_count):  
+    bar_width = 0.15
+    difficulty_levels = ['very Easy', 'Easy', 'Medium', 'Hard']
+    sub_colors = ['blue', 'orange', 'green', 'red']
+
+    index = range(len(difficulty_levels))
+    max_value = 0
+
+    for range_label in data:
+        for difficulty in difficulty_levels:
+            total = sum(data[range_label][category][difficulty] for category in categories) * 100
+            max_value = max(max_value, total)
+            
+    y_max = (max_value // 10 + 1) * 10
+
+    for i, range_label in enumerate(data):
+        for j, difficulty in enumerate(difficulty_levels):
+            bottom = 0
+            for k, category in enumerate(categories):
+                value = data[range_label][category][difficulty] * 100
+                plt.bar(
+                    i + j * bar_width,
+                    value,
+                    width=bar_width,
+                    color=sub_colors[k % len(sub_colors)],
+                    edgecolor='black',
+                    bottom=bottom
+                )
+                bottom += value
+                if value > 0:
+                    plt.text(i + j * bar_width, bottom - value / 2, f'{int(value)}', ha='center', va='center', color='white', fontsize=8)
+            
+            total = sum(data[range_label][category][difficulty] * 100 for category in categories)
+            plt.text(i + j * bar_width, total + 1, f'{int(total)}', ha='center', va='bottom', color='black')
+
+    plt.xticks([r + bar_width * 1.5 for r in range(len(data))], data.keys())
+    plt.xlim(-0.5, len(data) - 0.5 + bar_width * len(difficulty_levels))
+    plt.ylim(0, y_max)
+
+    plt.title(f'Analyze {Event_count}')
+    plt.xlabel('Range')
+    plt.ylabel('The number of events')
     
-    bar_width = 0.25
-    color_train = 'blue'
-    color_valid = 'orange'
-    color_test = 'green'
-
-    categories = ['Easy', 'Medium', 'Hard']
-    index_train = [categories.index(key) for key in Near_keys]
-    index_valid = [categories.index(key) for key in Moderate_keys]
-    index_test = [categories.index(key) for key in Far_keys]
-
-    plt.bar([i - bar_width for i in index_train], Near_values, width=bar_width, color=color_train, label='Near(0<=x<3)', edgecolor='black')
-    plt.bar(index_valid, Moderate_values, width=bar_width, color=color_valid, label='Moderate(3<=x<6)', edgecolor='black')
-    plt.bar([i + bar_width for i in index_test], Far_values, width=bar_width, color=color_test, label='Far(6<=x)', edgecolor='black')
-
-    for i, value in enumerate(Near_values):
-        plt.text(index_train[i] - bar_width, value + 0.01, f'{value:.2f}', ha='center', va='bottom', color=color_train)
-
-    for i, value in enumerate(Moderate_values):
-        plt.text(index_valid[i], value + 0.01, f'{value:.2f}', ha='center', va='bottom', color=color_valid)
-
-    for i, value in enumerate(Far_values):
-        plt.text(index_test[i] + bar_width, value + 0.01, f'{value:.2f}', ha='center', va='bottom', color=color_test)
-
-    plt.xticks(range(len(categories)), categories)
-
-    # 設置 xy 軸範圍
-    plt.xlim(-1, len(categories))
-    plt.ylim(0, 1.1)  
-    
-    plt.title('Analyze')
-    plt.xlabel('Question Difficulty')
-    plt.ylabel('Question count')
-    plt.legend()
-    plt.savefig('csv/Question range.png')
-    # plt.show()
+    plt.legend(categories, loc='upper left', bbox_to_anchor=(0, 1), ncol=1)
+    plt.tight_layout()
+    plt.savefig(f'csv/{plt_name}.png')
     plt.clf()
 
-def process_data(data):
+def process_data(data, categories):
     record = defaultdict(Counter)
-    keys = ['Easy', 'Medium', 'Hard']
     for key in data:
         total = sum(data[key].values())
-        for difficulty in keys:
+        for difficulty in categories:
             record[key][difficulty] = round(data[key][difficulty] / total, 2)
     return record
 
-def main():
-    dataset = get_data('csv/4_correct_ratio.csv')
+def statistics_data(dataset, Event_count, categories):
     question_set = set()
     question_type = defaultdict(Counter)
     question_range = defaultdict(Counter)
+    question_type_range = defaultdict(lambda: defaultdict(Counter))
 
     for data in dataset:
         ques = data[2].split('[')[1]
-        if 'who' in ques:
-            q_type = 'who'
-        elif 'when' in ques:
-            q_type = 'when'
-        elif 'what' in ques:
-            q_type = 'what'
-        elif 'where' in ques:
-            q_type = 'where'
-        elif 'why' in ques:
-            q_type = 'why'
-        elif 'how' in ques:
-            q_type = 'how'
+        
+        if data[5] == 'why':
+            if 'who' in ques:
+                q_type = 'who'
+            elif 'when' in ques:
+                q_type = 'when'
+            elif 'what' in ques:
+                q_type = 'what'
+            elif 'where' in ques:
+                q_type = 'where'
+            elif 'why' in ques:
+                q_type = 'why'
+            elif 'how' in ques:
+                q_type = 'how'
 
-        if data[11] < 3:
-            q_range = 'Near'
-        elif data[11] < 6:
-            q_range = 'Moderate'
-        else:
-            q_range = 'Far'
-        
-        if data[10] == 3:
-            q_defficult = 'Easy'
-        elif data[10] == 2 :
-            q_defficult = 'Medium'
-        elif data[10] == 1:
-            q_defficult = 'Hard'
-        
-        if ques not in question_set:
+            if data[-4] < 2:
+                q_range = 'Near'
+            elif data[-4] < 4:
+                q_range = 'Moderate'
+            else:
+                q_range = 'Far'
+            
+            if data[-5] == 3:
+                q_defficult = 'very Easy'
+            elif data[-5] == 2:
+                q_defficult = 'Easy'
+            elif data[-5] == 1 :
+                q_defficult = 'Medium'
+            elif data[-5] == 0:
+                q_defficult = 'Hard'
+            
+            # if ques not in question_set:
             question_type[q_type][q_defficult] += 1
+            question_set.add(ques)
             question_range[q_range][q_defficult] += 1
-        question_set.add(ques)
+            question_type_range[q_range][q_type][q_defficult] += 1
+        
+    # print(question_type)
+    # for key in question_type:
+    #     print(key, sum(question_type[key].values()))
+
+    # print('\n', question_range)
+    # for key in question_range:
+    #     print(key, sum(question_range[key].values()))
+
+    # processed_question_type =  process_data(question_type, categories)
+    # display_question_defficulty_histogram(processed_question_type, categories, f'Question type {Event_count}', f"{Event_count} Event")
+
+    # processed_question_range =  process_data(question_range, categories)
+    # display_question_defficulty_histogram(processed_question_range, categories, f'Question range {Event_count}', f"{Event_count} Event")
+
+    return question_type, question_range, question_type_range
+
+def count_range(record, question_type, range):
+    for q_type in question_type:
+        for level in question_type[q_type]:
+            record[range][q_type][level] += question_type[q_type][level]
     
-    processed_question_type =  process_data(question_type)
-    display_question_defficulty_histogram(processed_question_type)
+    return record
+
+def main(method):
+    dataset_2 = get_data(f'csv/4_correct_ratio_2_{method}.csv')
+    dataset_3 = get_data(f'csv/4_correct_ratio_3_{method}.csv')
+    dataset_4 = get_data(f'csv/4_correct_ratio_4_{method}.csv')
+
+    categories = ['very Easy', 'Easy', 'Medium', 'Hard']
+    stat_type_2, stat_range_2, stat_type_range_2 = statistics_data(dataset_2, Event_count = 2, categories = categories)
+    stat_type_3, stat_range_3, stat_type_range_3 = statistics_data(dataset_3, Event_count = 3, categories = categories)
+    stat_type_4, stat_range_4, stat_type_range_4 = statistics_data(dataset_4, Event_count = 4, categories = categories)
+
+    """
+    統計 Event 數量多寡影響問題難易度
+    """
+    total_count = defaultdict(Counter)
+    for type in stat_type_2:
+        for level in stat_type_2[type]:
+            total_count[2][level] += stat_type_2[type][level]
     
-    processed_question_range =  process_data(question_range)
-    display_question_range_histogram(processed_question_range)
+    for type in stat_type_3:
+        for level in stat_type_3[type]:
+            total_count[3][level] += stat_type_3[type][level]
+    
+    for type in stat_type_4:
+        for level in stat_type_4[type]:
+            total_count[4][level] += stat_type_4[type][level]
+    
+    processed_total = process_data(total_count, categories)
+    # display_question_defficulty_histogram(processed_total, categories, 'Question type total', "")
+
+    """
+    統計 Range 距離遠近影響問題難易度
+    """
+    record = defaultdict(Counter)
+    for type in stat_range_2:
+        for level in stat_range_2[type]:
+            record[type][level] += stat_range_2[type][level]
+    
+    for type in stat_range_3:
+        for level in stat_range_3[type]:
+            record[type][level] += stat_range_3[type][level]
+    
+    for type in stat_range_4:
+        for level in stat_range_4[type]:
+            record[type][level] += stat_range_4[type][level]
+    
+    processed_record = process_data(record, categories)
+    # display_question_defficulty_histogram(processed_record, categories, 'Question range total', "total range")
+
+    """
+    計算各個類別 Range ，不同的問題類型影響問題難易度
+    """
+    record = defaultdict(lambda: defaultdict(Counter))
+    for range in stat_type_range_2:
+        record = count_range(record, stat_type_range_2[range], range)
+    
+    for range in stat_type_range_3:
+        record = count_range(record, stat_type_range_3[range], range)
+
+    for range in stat_type_range_4:
+        record = count_range(record, stat_type_range_4[range], range)
+    
+    # for range in record:
+    #     processed_record = process_data(record[range], categories)
+    #     display_question_defficulty_histogram(processed_record, categories, f'{range}', f"{range} range")
+
+    print(record, '\n')
+    for range_label in record:
+        total = 0
+        for q_type in record[range_label]:
+            total += sum(record[range_label][q_type].values())
+
+        for q_type in record[range_label]:
+            for level in record[range_label][q_type]:
+                record[range_label][q_type][level] = round(record[range_label][q_type][level] / total, 2)
+    
+    print(record)
+    categories = ['who', 'what', 'when', 'why']
+    display_range_histogram(record, categories, f'Question_range_total', f"total range")
+    
+
     return 
 
 if __name__ == '__main__':
-    main()
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--method', '-m', type=str, choices=['gemini', 'gpt', 'cosine6', 'cosine5', 'cosine55'], default='cosine55')
+    args = parser.parse_args()
+    main(method=args.method)

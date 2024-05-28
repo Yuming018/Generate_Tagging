@@ -3,8 +3,9 @@ import re
 import google.generativeai as genai
 from openai import OpenAI
 import configparser
+import anthropic
 
-def checkdir(path_save_model, event_or_relation, Generation, model_name, use_Answer):
+def checkdir(path_save_model, event_or_relation, Generation, model_name, gen_answer):
     
     if not os.path.isdir(path_save_model):
         os.mkdir(path_save_model)
@@ -15,16 +16,16 @@ def checkdir(path_save_model, event_or_relation, Generation, model_name, use_Ans
             os.mkdir(path_save_model)
         path_save_model += '/tagging'
     elif Generation == 'question':
-        if use_Answer:
+        if gen_answer:
             path_save_model += '/QA_pair'
-        elif not use_Answer:
+        elif not gen_answer:
             path_save_model += '/Question'
     elif Generation == 'answer':
         path_save_model += '/Answer'
     elif Generation == 'ranking':
-        if use_Answer:
+        if gen_answer:
             path_save_model += '/Ranking_w_ans'
-        elif not use_Answer:
+        elif not gen_answer:
             path_save_model += '/Ranking'
     
     if not os.path.isdir(path_save_model):
@@ -97,7 +98,7 @@ def check_config():
     config.read(config_path)
     return config
 
-def gptapi(content, version = 3.5, temperature = 0.5):
+def gptapi(content, version = 3.5, temperature = 0.5, seed = 1234):
     config = check_config()
     client = OpenAI(
         api_key = config['key']['openai_api_key'],
@@ -107,6 +108,7 @@ def gptapi(content, version = 3.5, temperature = 0.5):
     completion = client.chat.completions.create(
         model=f"gpt-{version}-turbo",
         temperature = temperature,
+        seed = seed,
         messages=[
             {"role": "system", "content": "You are a helpful assistant."},
             {"role": "user", "content": content}],
@@ -148,6 +150,19 @@ def geminiapi(content, temperature = 0):
     model = genai.GenerativeModel('gemini-pro', safety_settings = safetySettings)    
     response = model.generate_content(content)
     return response.text
+
+def calude_api(content):
+    config = check_config()
+    api_key = config['key']['openai_api_key']
+    client = anthropic.Anthropic(api_key = api_key)
+    message = client.messages.create(
+        model="claude-3-opus-20240229",
+        max_tokens=1024,
+        messages=[
+            {"role": "user", "content": content}
+        ]
+    )
+    return message.content
 
 if __name__ == '__main__':
     pass

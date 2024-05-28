@@ -11,6 +11,7 @@ from helper import checkdir
 from datasets import load_metric
 
 metric = evaluate.load("bleu")
+rouge = evaluate.load("rouge")
 
 def read_data(path):
     data = pd.read_csv(path, index_col = False, encoding_errors = 'ignore')
@@ -19,8 +20,8 @@ def read_data(path):
 def save_csv(dataset, path, Generation):
     if Generation == 'tagging':
         row_1 = ["Story", "Content", "Question_predict", "Question_target", "BLEU-1", "BLEU-2", "BLEU-3", "BLEU-4", "Sentence_Bert_Score", "Overlap score"]
-    elif Generation == 'question':
-        row_1 = ["Story", "Content", "Question_predict", "Question_target", "Sentence_Bert_Score"]
+    elif Generation == 'question' or Generation == 'answer':
+        row_1 = ["Story", "Content", "Question_predict", "Question_target", "BLEU-1", "BLEU-2", "BLEU-3", "BLEU-4", "Sentence_Bert_Score"]
     with open(path, 'w', newline = '', encoding='utf-8') as csvfile:
         writer = csv.writer(csvfile, delimiter = ',')
         writer.writerow(row_1)
@@ -402,16 +403,6 @@ class eval_Question:
             data = np.concatenate((self.content[idx], [bleu_1, bleu_2, bleu_3, bleu_4, result]))
             record.append(data)
         return record, sent_score, bleu_score
-    
-    def cal_result(self, pred_dict, tar_dict):
-        result = metric.compute(predictions=[pred_dict['Event 1']], references=[tar_dict['Event 1']])
-        result2 = metric.compute(predictions=[pred_dict['Event 2']], references=[tar_dict['Event 2']])
-        result3 = metric.compute(predictions=[pred_dict['Event 1']], references=[tar_dict['Event 2']])
-        result4 = metric.compute(predictions=[pred_dict['Event 2']], references=[tar_dict['Event 1']])
-        if result['bleu'] + result2['bleu'] >= result3['bleu'] + result4['bleu']:
-            return result, result2
-        else:
-            return result3, result4
 
     def cal_sentT(self, pred_dict, tar_dict):
         model = SentenceTransformer('multi-qa-MiniLM-L6-cos-v1')
@@ -422,8 +413,42 @@ class eval_Question:
                 passage_embedding = model.encode(tar_dict[key_2])
                 result = util.dot_score(query_embedding, passage_embedding)
                 score = max(score, round(result[0][0].item(), 2))
-        
         return score 
+    
+class eval_Answer:
+    def __init__(self, path) -> None:
+        self.dataset = read_data(path)
+    
+    def SentT(self):
+        model = SentenceTransformer('multi-qa-MiniLM-L6-cos-v1')
+
+        sent_score = 0
+        rouge_score = 0
+        record = []
+        bleu_score = [0, 0, 0, 0]
+        for data in tqdm(self.dataset):
+            pred = data[2]
+            tar = data[3]
+
+            result = metric.compute(predictions=[pred], references=[tar])
+            bleu_1 = round(result['precisions'][0], 2)
+            bleu_2 = round(result['precisions'][1], 2)
+            bleu_3 = round(result['precisions'][2], 2)
+            bleu_4 = round(result['precisions'][3], 2)
+            bleu_score[0] += bleu_1
+            bleu_score[1] += bleu_2
+            bleu_score[2] += bleu_3
+            bleu_score[3] += bleu_4
+
+            query_embedding = model.encode(pred)
+            passage_embedding = model.encode(tar)
+            result = util.dot_score(query_embedding, passage_embedding)
+            result = round(result[0][0].item(), 2)
+            sent_score += result
+
+            data = np.concatenate((data, [bleu_1, bleu_2, bleu_3, bleu_4, result]))
+            record.append(data)
+        return record, sent_score, bleu_score
     
 class eval_Ranking:
     def __init__(self, path) -> None:
@@ -454,11 +479,11 @@ if __name__ == '__main__':
                         type=str,
                         default='Event')
     parser.add_argument('--Generation', '-g',
-                        choices=["tagging", "question", "ranking"],
+                        choices=["tagging", "question", "answer","ranking"],
                         type=str,
                         default='tagging')
     parser.add_argument('--Model', '-m',
-                        choices=['Mt0', 'T5', 'Bart', 'roberta', 'gemma', 'flant5', 'gemini', 'openai', 'distil', 'deberta'],
+                        choices=['Mt0', 'T5', 'T5_base', 'T5_small', 'bart', 'roberta', 'gemma', 'flant5', 'gemini', 'openai', 'distil', 'deberta'],
                         type=str,
                         default='Mt0')
     parser.add_argument('--Answer', '-a',
@@ -498,6 +523,16 @@ if __name__ == '__main__':
             save_csv(record, path + 'score.csv', args.Generation)
     elif args.Generation == 'question':
         eval = eval_Question(path + f'{args.Generation}.csv')
+        record, s_score, bleu_score = eval.SentT()
+        num = len(eval.dataset)
+        print("BLEU-1 : ", round(bleu_score[0]/num, 2))
+        print("BLEU-2 : ", round(bleu_score[1]/num, 2))
+        print("BLEU-3 : ", round(bleu_score[2]/num, 2))
+        print("BLEU-4 : ", round(bleu_score[3]/num, 2))
+        print("SentenceTransformer : ", round(s_score/num, 2))
+        save_csv(record, path + 'score.csv', args.Generation)
+    elif args.Generation == 'answer':
+        eval = eval_Answer(path + f'{args.Generation}.csv')
         record, s_score, bleu_score = eval.SentT()
         num = len(eval.dataset)
         print("BLEU-1 : ", round(bleu_score[0]/num, 2))

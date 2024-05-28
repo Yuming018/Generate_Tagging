@@ -8,6 +8,7 @@ sentence_transformers
 matplotlib
 google-generativeai
 openai
+anthropic
 rouge_score
 
 #click==8.1.7

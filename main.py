@@ -14,23 +14,23 @@ def main(batch_size = 4,
          test_mode = False,
          event_or_relation = 'Event',
          Generation = 'tagging',
-         use_Answer = False,
+         gen_answer = False,
          model_name = "Mt0"):
    
     if Generation == 'tagging' :
         print('Tagging : ', event_or_relation)
         print('Generation : ', Generation)
     elif Generation == 'question':
-        if use_Answer:
+        if gen_answer:
             print('Generation : ', 'QA_pair')
-        elif not use_Answer:
+        elif not gen_answer:
             print('Generation : ', Generation)
     elif Generation == 'answer':
         print('Generation : ', Generation)
     elif Generation == 'ranking':
         print('Generation : ', Generation)
 
-    path_save_model = checkdir(path_save_model, event_or_relation, Generation, model_name, use_Answer)
+    path_save_model = checkdir(path_save_model, event_or_relation, Generation, model_name, gen_answer)
     model, tokenizer = create_model(model_name, Generation, test_mode, path_save_model)
     model.to(device)
 
@@ -41,9 +41,9 @@ def main(batch_size = 4,
         test_data = Extraction_Datasets('data/test.csv', model_name, tokenizer, event_or_relation = event_or_relation, max_len = max_len)
     elif Generation == 'question':
         file_name = path_save_model + 'question.csv'
-        train_data = Question_generation_Datasets('data/train.csv', model_name, tokenizer, max_len, use_Answer)
-        valid_data = Question_generation_Datasets('data/valid.csv', model_name, tokenizer, max_len, use_Answer)
-        test_data = Question_generation_Datasets('data/test.csv', model_name, tokenizer, max_len, use_Answer)
+        train_data = Question_generation_Datasets('data/train.csv', model_name, tokenizer, max_len, gen_answer)
+        valid_data = Question_generation_Datasets('data/valid.csv', model_name, tokenizer, max_len, gen_answer)
+        test_data = Question_generation_Datasets('data/test.csv', model_name, tokenizer, max_len, gen_answer)
     elif Generation == 'answer':
         file_name = path_save_model + 'answer.csv'
         train_data = Answer_generation_dataset('data/train.csv', model_name, tokenizer, max_len)
@@ -51,9 +51,9 @@ def main(batch_size = 4,
         test_data = Answer_generation_dataset('data/test.csv', model_name, tokenizer, max_len)
     elif Generation == 'ranking':
         file_name = path_save_model + 'ranking.csv'
-        train_data = Ranking_dataset('data/Ranking/train_ranking.csv', model_name, tokenizer, max_len, use_Answer)
-        valid_data = Ranking_dataset('data/Ranking/valid_ranking.csv', model_name, tokenizer, max_len, use_Answer)
-        test_data = Ranking_dataset('data/Ranking/test_ranking.csv', model_name, tokenizer, max_len, use_Answer)
+        train_data = Ranking_dataset('data/Ranking/train_ranking.csv', model_name, tokenizer, max_len, gen_answer)
+        valid_data = Ranking_dataset('data/Ranking/valid_ranking.csv', model_name, tokenizer, max_len, gen_answer)
+        test_data = Ranking_dataset('data/Ranking/test_ranking.csv', model_name, tokenizer, max_len, gen_answer)
 
     print('Train : ', len(train_data))
     print('Valid : ', len(valid_data))
@@ -95,12 +95,12 @@ if __name__ == '__main__':
                         type=str, 
                         choices=['tagging', 'question', 'answer', 'ranking'], 
                         default='tagging')
-    parser.add_argument('--use_Answer', '-a', 
+    parser.add_argument('--gen_answer', '-a', 
                         type=bool, 
                         default=False)
     parser.add_argument('--Model', '-m', 
                         type=str, 
-                        choices=['Mt0', 'T5', 'bart', 'bert', 'gemma', 'flant5', 'roberta', 'distil', 'deberta'], 
+                        choices=['Mt0', 'T5', 'T5_base', 'T5_small', 'bart', 'bert', 'gemma', 'flant5', 'roberta', 'distil', 'deberta'], 
                         default='Mt0')
     args = parser.parse_args()
     
@@ -113,5 +113,5 @@ if __name__ == '__main__':
         test_mode = args.test_mode, 
         event_or_relation = args.event_or_relation, 
         Generation = args.Generation,
-        use_Answer = args.use_Answer,
+        gen_answer = args.gen_answer,
         model_name = args.Model)
