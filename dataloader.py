@@ -57,7 +57,7 @@ class Extraction_Datasets:
         for idx in tqdm(range(len(self.dataset))):
             dict = {}
             tag_type = self.dataset[idx][self.index].split(' - ')[0]
-            if self.tagging_type == 'Event' or self.path == 'data/train.csv':
+            if self.tagging_type == 'Event' or self.path == 'data/test.csv':
                 if tag_type in legal_tagging:
                     input_ids, attention_mask = self.create_input([idx])
                     target_ids = self.create_target([idx])
@@ -84,7 +84,7 @@ class Extraction_Datasets:
         return          
 
     def create_input(self, story_list):
-        if self.tagging_type == 'Event' or self.path == 'data/train.csv':
+        if self.tagging_type == 'Event' or self.path == 'data/test.csv':
             context = text_segmentation(self.dataset[story_list[0]])
         elif self.tagging_type == 'Relation':
             context = self.dataset[story_list[0]][1]
@@ -147,9 +147,9 @@ class Question_generation_Datasets:
         self.model_name = model_name
         self.tokenizer = tokenizer
         self.dataset = self.get_data(path)
-        # if self.path == 'data/test.csv':
-        #     self.Relation_tagging = self.get_data(f'save_model/Relation/tagging/{model_name}/tagging.csv')
-        #     self.Evnet_tagging = self.get_data(f'save_model/Event/tagging/{model_name}/tagging.csv')
+        if self.path == 'data/test.csv':
+            self.Relation_tagging = self.get_data(f'save_model/Relation/tagging/{model_name}/tagging.csv')
+            self.Evnet_tagging = self.get_data(f'save_model/Event/tagging/{model_name}/tagging.csv')
         self.datasets, self.paragraph = [], []
         self.create_dataset()  
 
@@ -183,7 +183,10 @@ class Question_generation_Datasets:
     def create_input(self, story_list, story_name):
 
         context = self.dataset[story_list[0]][1]
-        text = create_prompt(self.model_name, None, 'question', context)
+        text = create_prompt(self.model_name, None, 'question', context, 
+                            #  question_type=self.dataset[story_list[0]][0], 
+                            #  question_words=self.dataset[story_list[0]][2].split(" ")[0]
+                             )
 
         # if self.path == 'data/test.csv':
         #     while self.event_idx < len(self.Evnet_tagging) and self.Evnet_tagging[self.event_idx][0] == story_name:
@@ -211,25 +214,24 @@ class Question_generation_Datasets:
                     elif tagging_type == 'Event':
                         temp = " ".join(self.dataset[idx][i][:left_parenthesis_index].split(' - ')[1:])
                         text += f"[{self.dataset[idx][i][:left_parenthesis_index].split(' - ')[0]}] {temp} "
-            text += "[END]"
+        text += "[END]"
 
         encoded_sent = enconder(self.tokenizer, self.max_len, text = text)
         # print(encoded_sent.get('input_ids'))
-        # print(self.tokenizer.decode(encoded_sent.get('input_ids'), skip_special_tokens=True))   
+        # print(self.tokenizer.decode(encoded_sent.get('input_ids'), skip_special_tokens=True))
         # input()
         return encoded_sent.get('input_ids'), encoded_sent.get('attention_mask')
 
     def create_target(self, story_list):
-        text = ""
-        for idx, story_idx in enumerate(story_list):
-            text += f"[Question {idx+1}] {self.dataset[story_idx][2]} "
-            if self.use_Answer:
-                text += f"[Answer {idx+1}] {self.dataset[story_idx][3]} "
+
+        text = f"[Question] {self.dataset[story_list[0]][2]} "
+        if self.use_Answer:
+            text += f"[Answer] {self.dataset[story_list[0]][3]} "
         text += "[END]"
+
         encoded_sent = enconder(self.tokenizer, 128, text = text)
         # print(encoded_sent.get('input_ids'))
         # print(self.tokenizer.decode(encoded_sent.get('input_ids'), skip_special_tokens=True))
-        # input()
         return encoded_sent.get('input_ids')
 
     def __len__(self):
@@ -273,13 +275,15 @@ class Answer_generation_dataset:
         text = f'{self.dataset[idx][2]} <SEP> {self.dataset[idx][1]} '
         encoded_sent = enconder(self.tokenizer, self.max_len, text = text)
         # print(encoded_sent.get('input_ids'))
+        print(self.tokenizer.decode(encoded_sent.get('input_ids'), skip_special_tokens=True))
         return encoded_sent.get('input_ids'), encoded_sent.get('attention_mask'), text
 
     def create_target(self, idx):
         text = self.dataset[idx][3]
         encoded_sent = enconder(self.tokenizer, 64, text = text)
         # print(encoded_sent.get('input_ids'))
-        # input()
+        print(self.tokenizer.decode(encoded_sent.get('input_ids'), skip_special_tokens=True))
+        input()
         return encoded_sent.get('input_ids')
 
     def __len__(self):

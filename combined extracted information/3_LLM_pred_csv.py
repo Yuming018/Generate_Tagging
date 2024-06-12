@@ -6,12 +6,7 @@ import csv
 import argparse
 import pandas as pd
 import logging
-from collections import defaultdict
 from tqdm import tqdm
-import random
-
-file_handler = logging.FileHandler('error.log')
-file_handler.setLevel(logging.ERROR)
 
 def get_data(path):
         data = pd.read_csv(path)

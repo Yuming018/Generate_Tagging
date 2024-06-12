@@ -70,17 +70,17 @@ def check_checkpoint(path_save_model):
 def create_prompt(model_name, tagging_type, generate_type, context):
 
     if generate_type == 'tagging':
-        if model_name == 'Mt0' or model_name == 'gemma':
+        if model_name == 'Mt0' or model_name == 'gemma' or model_name == 'flant5':
             text = f"Please utilize the provided context to generate {tagging_type} 1 key information for this context [Context] {context} [END]"
-        elif model_name == 'T5' or model_name == 'flant5' or model_name == 'Bart':
+        elif model_name == 'T5' or model_name == 'Bart':
             text = f"[Context] {context} [END]"
         elif model_name == 'roberta':
             question = f'What {tagging_type} key information is included in this context and explain their subjects, objects, and their possible types?'
             text = (question, context)
     elif generate_type == 'question':
-        if model_name == 'Mt0' or model_name == 'gemma':
+        if model_name == 'Mt0' or model_name == 'gemma' or model_name == 'flant5':
             text = f"Please utilize the provided context and key information to generate question for this context [Context] {context} "
-        elif model_name == 'T5' or model_name == 'flant5'  or model_name == 'Bart' or model_name == 'roberta':
+        elif model_name == 'T5' or model_name == 'Bart' or model_name == 'roberta':
             text = f"[Context] {context} "
     elif generate_type == 'ranking':
         if model_name == 'distil':

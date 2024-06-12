@@ -6,7 +6,11 @@ data/
 save_model/
 wandb/
 
+combined extracted information/csv/
+combined extracted information/pictures/
+
 *.csv
 *.png
+*.log
 
 config.ini

@@ -11,6 +11,8 @@ def corf_resolution(text):
     document, clusters = prediction['document'], prediction['clusters']
     coreference = defaultdict(list)
     for cluster in clusters:
+        print(get_span_words(cluster[0], document) + ': ', end='')
+        print(f"[{'; '.join([get_span_words(span, document) for span in cluster])}]")
         for span in cluster:
             coreference[get_span_words(cluster[0], document)].append(get_span_words(span, document))
     
@@ -20,6 +22,6 @@ def get_span_words(span, document):
     return ' '.join(document[span[0]:span[1]+1])
 
 if __name__ == '__main__':
-    # text = "' away , away ! ' barked the yard - dog . ' i 'll tell you ; they said i was a pretty little fellow once . then i used to lie in a velvet - covered chair , up at the master 's house , and sit in the mistress 's lap . they used to kiss my nose , and wipe my paws with an embroidered handkerchief , and i was called ' ami , dear ami , sweet ami . ' but after a while i grew too big for them , and they sent me away to the housekeeper 's room . so i came to live on the lower story . you can look into the room from where you stand , and see where i was master once . i was indeed master to the housekeeper . it was certainly a smaller room than those up stairs . but i was more comfortable , for i was not being continually taken hold of and pulled about by the children as i had been . i received quite as good food , or even better . i had my own cushion , and there was a stove -- it is the finest thing in the world at this season of the year . i used to go under the stove , and lie down quite beneath it . ah , i still dream of that stove . away , away ! '"
-    # coreference = corf_resolution(text)
-    print('i' in 'was a pretty lttle fellow once')
+    text = "quite unlike other boys , kintaro , grew up all alone in the mountain wilds . as he had no companions he made friends with all the animals and learned to understand them and to speak their strange talk . by degrees they all grew quite tame and looked upon kintaro as their master , and he used them as his servants and messengers . but his special retainers were the bear , the deer , the monkey and the hare ."
+    coreference = corf_resolution(text)
+    # print('i' in 'was a pretty lttle fellow once')

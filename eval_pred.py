@@ -9,6 +9,7 @@ from sklearn.metrics import precision_score, recall_score, f1_score, classificat
 from sentence_transformers import SentenceTransformer, util
 from helper import checkdir
 from datasets import load_metric
+from sklearn.metrics import precision_recall_fscore_support
 
 metric = evaluate.load("bleu")
 rouge = evaluate.load("rouge")
@@ -46,8 +47,11 @@ class eval_Realtion:
             tar = tar.split('[')[1:-1]
             self.content.append(data)
             for p, t in zip(pred, tar):
-                self.pred_dict[idx][p.split(']')[0]] = p.split(']')[1]
-                self.tar_dict[idx][t.split(']')[0]] = t.split(']')[1]
+                try:
+                    self.pred_dict[idx][p.split(']')[0]] = p.split(']')[1]
+                    self.tar_dict[idx][t.split(']')[0]] = t.split(']')[1]
+                except:
+                    continue
     
     def process_label(self):
         pred, true = [], []
@@ -218,13 +222,16 @@ class eval_Event:
             tar = tar.split('[')[1:-1]
             self.content.append(data)
             for p in pred:
-                label = p.split(']')[0]
-                entity = p.split(']')[1]
-                if label != 'Event' and label not in self.repeat_label and label not in self.all_type_dict and entity != "":
-                    self.all_type_dict[label] = type_idx
-                    type_idx += 1
-                if entity.replace(' ', '') != '':
-                    self.pred_dict[idx][label] = p.split(']')[1]
+                try:
+                    label = p.split(']')[0]
+                    entity = p.split(']')[1]
+                    if label != 'Event' and label not in self.repeat_label and label not in self.all_type_dict and entity != "":
+                        self.all_type_dict[label] = type_idx
+                        type_idx += 1
+                    if entity.replace(' ', '') != '':
+                        self.pred_dict[idx][label] = p.split(']')[1]
+                except:
+                    pass
             for t in tar:
                 label = t.split(']')[0]
                 if label != 'Event' and label not in self.repeat_label and label not in self.all_type_dict:
@@ -388,7 +395,7 @@ class eval_Question:
             pred = self.pred_dict[idx]
             tar = self.tar_dict[idx]
 
-            result = metric.compute(predictions=[pred['Question 1']], references=[tar['Question 1']])
+            result = metric.compute(predictions=[pred['Question 1']], references=[tar['Question']])
             bleu_1 = round(result['precisions'][0], 2)
             bleu_2 = round(result['precisions'][1], 2)
             bleu_3 = round(result['precisions'][2], 2)
@@ -449,7 +456,7 @@ class eval_Answer:
             data = np.concatenate((data, [bleu_1, bleu_2, bleu_3, bleu_4, result]))
             record.append(data)
         return record, sent_score, bleu_score
-    
+
 class eval_Ranking:
     def __init__(self, path) -> None:
         self.pred, self.label = [], []
@@ -468,8 +475,15 @@ class eval_Ranking:
         load_f1 = load_metric("f1")
         accuracy = load_accuracy.compute(predictions=self.pred, references=self.label)["accuracy"]
         f1 = load_f1.compute(predictions=self.pred, references=self.label)["f1"]
+        
         print("Accuracy : ", accuracy)
         print("F1 : ", f1)
+
+        precision, recall, f1, _ = precision_recall_fscore_support(self.label, self.pred, average='binary')
+
+        print(f"F1 Score: {f1}")
+        print(f"Precision: {precision}")
+        print(f"Recall: {recall}")
         return 
          
 if __name__ == '__main__':

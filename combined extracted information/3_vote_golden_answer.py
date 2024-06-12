@@ -19,8 +19,13 @@ def get_data(path):
     data = data.fillna('')
     return data.values
 
-def save_csv(record, path):
-    row = ['Paragraph', 'Context', 'Prediction', 'Reference', 'Input_text', 'Question type', 'Golden Answer', 'label', 'Correct ans ratio', 'Question_difficulty', 'SentenceBert', 'Event graph', 'Relation graph']
+def save_csv(record, path, our_or_llm):
+    if our_or_llm == 'our':
+        row = ['Paragraph', 'Context', 'Prediction', 'Reference', 'Input_text', 'Question type', 'Golden Answer', 'label', 'Correct ans ratio', 'Question_difficulty', 'SentenceBert', 'Event graph', 'Relation graph']
+    elif our_or_llm == 'llm':
+        row = ['Paragraph', 'Context', 'Difficulty level', 'Prediction', 'Golden Answer']
+    elif our_or_llm == 'fairytale':
+        row = ['Paragraph', 'Context', 'Question', 'Fairytale Answer', 'Golden Answer']
 
     with open(path, 'w', newline = '', encoding='utf-8') as csvfile:
         writer = csv.writer(csvfile, delimiter = ',')
@@ -28,20 +33,41 @@ def save_csv(record, path):
         for i in range(len(record)):
             writer.writerow(record[i])
 
-def main(ranking_model = 'deberta', Event_count = 2):
-    dataset = get_data(f'csv/2_{ranking_model}_w_ans_pred_{Event_count}.csv')
+def main(ranking_model = 'deberta', Event_count = 2, our_or_llm ='our', exampler = 5):
+    if our_or_llm == 'our':
+        dataset = get_data(f'csv/2_{ranking_model}_w_ans_pred_{Event_count}.csv')
+    elif our_or_llm == 'llm':
+        dataset = get_data(f'csv/0_openai_generate_{exampler}.csv')
+    elif our_or_llm == 'fairytale':
+        dataset = get_data('../data/test.csv')
+
     snet_T = SentenceTransformer('multi-qa-MiniLM-L6-cos-v1')
     record = []
     
     for idx, data in tqdm(enumerate(dataset)):
         # if idx > 5:
         #     break
-
-        context = data[1]
-        pred = data[2].split('[')[1:-1]
-        ques = pred[0].split(']')[1]
-
-        golden_ans = ""
+        
+        if our_or_llm == 'our':
+            context = data[1]
+            pred = data[2].split('[')[1:-1]
+            ques = pred[0].split(']')[1]
+            insert_index = 6
+            save_path = f'csv/3_question_w_golden_ans_{Event_count}.csv'
+        elif our_or_llm == 'llm':
+            context = data[1]
+            ques = data[3].split('.')[-1]
+            insert_index = 4
+            save_path = f'csv/3_llm_question_w_golden_ans_{exampler}.csv'
+        elif our_or_llm == 'fairytale':
+            context = data[1]
+            ques = data[2]
+            data = [data[4]] + list(data)[1:4]
+            insert_index = 4
+            save_path = f'csv/3_fairytale_question_w_golden.csv'
+            if idx == 30:
+                break
+        
         gemini_ans = ""
         gpt_ans = ""  
         
@@ -100,17 +126,22 @@ def main(ranking_model = 'deberta', Event_count = 2):
        
         data = list(data)
         if result[0][0] > 0.8:
-            data.insert(6, gpt_ans)
+            data.insert(insert_index, gpt_ans)
         else:
-            data.insert(6, "False, " + gpt_ans)
+            data.insert(insert_index, "False, " + gpt_ans)
         
         record.append(data)
-        save_csv(record, f'csv/3_question_w_golden_ans_{Event_count}.csv')
+        save_csv(record, save_path, our_or_llm)
     return
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--Ranking_model', '-r', type=str, choices=['distil', 'deberta'], default='deberta')
+    parser.add_argument('--our_or_llm', '-m', type=str, choices=['our', 'llm', 'fairytale'], default='our')
     parser.add_argument('--Event_count', '-c', type=int, default=2)
+    parser.add_argument('--exampler', '-e', type=int, default=5)
     args = parser.parse_args()
-    main(ranking_model = args.Ranking_model, Event_count = args.Event_count)
+    main(ranking_model = args.Ranking_model,
+         Event_count = args.Event_count,
+         our_or_llm = args.our_or_llm, 
+         exampler = args.exampler)

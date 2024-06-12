@@ -81,14 +81,14 @@ def Mt0(test_mode, model_path):
     model_name = "bigscience/mt0-large"
 
     tokenizer = AutoTokenizer.from_pretrained(model_name)
+    model = AutoModelForSeq2SeqLM.from_pretrained(model_name)
     lora_config = LoraConfig(
         task_type=TaskType.SEQ_2_SEQ_LM,
         inference_mode=False,
-        r=8,
+        r=12,
         lora_alpha=32, 
         lora_dropout=0.1,
     )
-    model = AutoModelForSeq2SeqLM.from_pretrained(model_name)
     peft_model = get_peft_model(model, lora_config)
     peft_model.config.use_cache = False
 

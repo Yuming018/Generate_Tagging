@@ -162,8 +162,8 @@ def generate_question(model_name, gen_answer, text, target, tokenizer, device):
     question = tokenizer.decode(question_ids, skip_special_tokens=True)
     score = eval(question, target)
 
-    print('Text : ', text)
-    print('Question: ', question, '\n')
+    # print('Text : ', text)
+    # print('Question: ', question, '\n')
     # print('Target : ', target, '\n')
     return question, score
 

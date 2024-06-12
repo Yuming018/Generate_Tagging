@@ -49,33 +49,33 @@ def main(device = 'cpu',
             continue
         curr_para = para
 
-        if count == 2:
-            question_set, score_set, text_set, question_difficulty, question_5w1h, Event_graph, Relation_graph = create_knowledge_graph(gen_answer, 
-                                                                                                                                        context_type, 
-                                                                                                                                        context, 
-                                                                                                                                        focus_context, 
-                                                                                                                                        target, 
-                                                                                                                                        tokenizer, 
-                                                                                                                                        device, 
-                                                                                                                                        model_name, 
-                                                                                                                                        question_type, 
-                                                                                                                                        Event_count)
-            for question, score, text, difficulty, q_5w1h in zip(question_set, score_set, text_set, question_difficulty, question_5w1h):
-                record['context'].append(context)
-                record['predict'].append(question)
-                record['reference'].append(target)
-                record['eval_score'].append(score)
-                record['paragraph'].append(paragraph)
-                record['Event_graph'].append(Event_graph)
-                record['Relation_graph'].append(Relation_graph)
-                record['input_text'].append(text)
-                record['question_difficulty'].append(difficulty)
-                record['question_5w1h'].append(q_5w1h)
+        # if count == 2:
+        question_set, score_set, text_set, question_difficulty, question_5w1h, Event_graph, Relation_graph = create_knowledge_graph(gen_answer, 
+                                                                                                                                    context_type, 
+                                                                                                                                    context, 
+                                                                                                                                    focus_context, 
+                                                                                                                                    target, 
+                                                                                                                                    tokenizer, 
+                                                                                                                                    device, 
+                                                                                                                                    model_name, 
+                                                                                                                                    question_type, 
+                                                                                                                                    Event_count)
+        for question, score, text, difficulty, q_5w1h in zip(question_set, score_set, text_set, question_difficulty, question_5w1h):
+            record['context'].append(context)
+            record['predict'].append(question)
+            record['reference'].append(target)
+            record['eval_score'].append(score)
+            record['paragraph'].append(paragraph)
+            record['Event_graph'].append(Event_graph)
+            record['Relation_graph'].append(Relation_graph)
+            record['input_text'].append(text)
+            record['question_difficulty'].append(difficulty)
+            record['question_5w1h'].append(q_5w1h)
         save_csv(record, path = f'csv/1_predict_{Event_count}.csv')
 
-        count += 1
-        if count > 5:
-            break
+        # count += 1
+        # if count > 5:
+        #     break
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
