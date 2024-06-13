@@ -5,16 +5,13 @@ from openai import OpenAI
 import configparser
 import anthropic
 
-def checkdir(path_save_model, event_or_relation, Generation, model_name, gen_answer):
+def checkdir(path_save_model, Generation, model_name, gen_answer):
     
     if not os.path.isdir(path_save_model):
         os.mkdir(path_save_model)
     
-    if Generation == 'tagging' :
-        path_save_model += f'/{event_or_relation}'
-        if not os.path.isdir(path_save_model):
-            os.mkdir(path_save_model)
-        path_save_model += '/tagging'
+    if Generation == 'Event' or Generation == 'Relation':
+        path_save_model += f'/{Generation}'
     elif Generation == 'question':
         if gen_answer:
             path_save_model += '/QA_pair'
@@ -67,19 +64,22 @@ def check_checkpoint(path_save_model):
     model_path = path_save_model + f'checkpoints/checkpoint-{max(checkpoints_list)}/'
     return model_path
 
-def create_prompt(model_name, tagging_type, generate_type, context):
+def create_prompt(model_name, generate_type, context, question_type = None, gen_Answer = False):
 
-    if generate_type == 'tagging':
+    if generate_type == 'Event' or generate_type == 'Relation':
         if model_name == 'Mt0' or model_name == 'gemma' or model_name == 'flant5':
-            text = f"Please utilize the provided context to generate {tagging_type} 1 key information for this context [Context] {context} [END]"
+            text = f"Please utilize the provided context to generate {generate_type} 1 key information for this context [Context] {context} [END]"
         elif model_name == 'T5' or model_name == 'Bart':
             text = f"[Context] {context} [END]"
         elif model_name == 'roberta':
-            question = f'What {tagging_type} key information is included in this context and explain their subjects, objects, and their possible types?'
+            question = f'What {generate_type} key information is included in this context and explain their subjects, objects, and their possible types?'
             text = (question, context)
     elif generate_type == 'question':
         if model_name == 'Mt0' or model_name == 'gemma' or model_name == 'flant5':
-            text = f"Please utilize the provided context and key information to generate question for this context [Context] {context} "
+            if gen_Answer:
+                text = f"Please utilize the provided context, answer and key information to generate {question_type} question for this context [Context] {context} "
+            elif not gen_Answer:
+                text = f"Please utilize the provided context and key information to generate {question_type} question ans answer for this context [Context] {context} "
         elif model_name == 'T5' or model_name == 'Bart' or model_name == 'roberta':
             text = f"[Context] {context} "
     elif generate_type == 'ranking':

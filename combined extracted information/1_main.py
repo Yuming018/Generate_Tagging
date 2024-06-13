@@ -73,13 +73,13 @@ def main(device = 'cpu',
             record['question_5w1h'].append(q_5w1h)
         save_csv(record, path = f'csv/1_predict_{Event_count}.csv')
 
-        # count += 1
-        # if count > 5:
-        #     break
+        count += 1
+        if count > 5:
+            break
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--Model', '-m', type=str, choices=['Mt0', 'T5', 'Bart', 'roberta', 'gemma', 'flant5'], default='Mt0')
+    parser.add_argument('--Model', '-m', type=str, choices=['Mt0', 'T5', 'Bart', 'roberta', 'gemma', 'flant5'], default='T5')
     parser.add_argument('--Question_type', '-qt', type=str, choices=['who', 'where', 'what', 'when', 'how', 'why'], default='who')
     parser.add_argument('--Answer', '-a', type=bool, default=False)
     parser.add_argument('--Event_count', '-c', type=int, default=2)

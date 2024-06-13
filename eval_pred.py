@@ -311,7 +311,6 @@ class eval_Event:
         else:
             f1_c = 0
         
-        
         # get results identification
         gold_arg_n, pred_arg_n, pred_in_gold_n, gold_in_pred_n = 0, 0, 0, 0
         for idx in tqdm(self.pred_dict):
@@ -395,7 +394,7 @@ class eval_Question:
             pred = self.pred_dict[idx]
             tar = self.tar_dict[idx]
 
-            result = metric.compute(predictions=[pred['Question 1']], references=[tar['Question']])
+            result = metric.compute(predictions=[pred['Question']], references=[tar['Question']])
             bleu_1 = round(result['precisions'][0], 2)
             bleu_2 = round(result['precisions'][1], 2)
             bleu_3 = round(result['precisions'][2], 2)
