@@ -14,12 +14,19 @@ from sklearn.metrics import precision_recall_fscore_support
 metric = evaluate.load("bleu")
 rouge = evaluate.load("rouge")
 
+atomic_type ={
+    'presona' : ['X attribute'],
+    'event' : ['X need', 'Effect on X', 'X want', 'Other want', ' Effect on other'],
+    'mentalstate' : ['X intent', 'X reaction', 'Other reaction'],
+    'temporal' : ['Temporal']
+}
+
 def read_data(path):
     data = pd.read_csv(path, index_col = False, encoding_errors = 'ignore')
     return data.values
 
 def save_csv(dataset, path, Generation):
-    if Generation == 'tagging':
+    if Generation == 'Event' or Generation == 'Relation':
         row_1 = ["Story", "Content", "Question_predict", "Question_target", "BLEU-1", "BLEU-2", "BLEU-3", "BLEU-4", "Sentence_Bert_Score", "Overlap score"]
     elif Generation == 'question' or Generation == 'answer':
         row_1 = ["Story", "Content", "Question_predict", "Question_target", "BLEU-1", "BLEU-2", "BLEU-3", "BLEU-4", "Sentence_Bert_Score"]
@@ -136,8 +143,21 @@ class eval_Realtion:
             """
             result = self.cal_sentence(pred, tar)
             sent_score['non_label'] += result
+            # print(pred['Relation 1'], tar['Relation 1'])
+            # input()
+            pred_type, tar_type = "", "" 
             record[count] = np.append(record[count], result)
-            if pred['Relation 1'] == tar['Relation 1']:
+            for type in atomic_type:
+                for sub_type in atomic_type[type]:
+                    if sub_type in pred['Relation 1']:
+                        pred_type = type
+                    if sub_type in tar['Relation 1']:
+                        tar_type = type
+            if pred_type == "" or tar_type == "":
+                print(pred['Relation 1'], tar['Relation 1'])
+            # input()
+                    
+            if pred_type == tar_type:
                 sent_score['label'] += result
             
             """
@@ -146,7 +166,7 @@ class eval_Realtion:
             result = self.cal_overlap(pred, tar)
             overlap_score['non_label'] += result
             record[count] = np.append(record[count], result)
-            if pred['Relation 1'] == tar['Relation 1']:
+            if pred_type == tar_type:
                 overlap_score['label'] += result
 
             count += 1
@@ -181,21 +201,22 @@ class eval_Realtion:
         return max(round(overlap_ratio, 2) + round(overlap_ratio_4, 2), round(overlap_ratio_2, 2) + round(overlap_ratio_3, 2)) /2
 
     def longest_common_subsequence(self, pred, tar):
+
+        # def longest_common_substring(str1, str2):
         m = len(pred)
         n = len(tar)
-        # Create a table to store lengths of LCS
-        lcs_table = [[0] * (n + 1) for _ in range(m + 1)]
-
-        # Building the LCS table
+        longest = 0
+        length_table = [[0] * (n + 1) for _ in range(m + 1)]
+        
         for i in range(1, m + 1):
             for j in range(1, n + 1):
                 if pred[i - 1] == tar[j - 1]:
-                    lcs_table[i][j] = lcs_table[i - 1][j - 1] + 1
+                    length_table[i][j] = length_table[i - 1][j - 1] + 1
+                    longest = max(longest, length_table[i][j])
                 else:
-                    lcs_table[i][j] = max(lcs_table[i - 1][j], lcs_table[i][j - 1])
-
-        # Length of LCS is the value at the bottom-right cell of the table
-        return lcs_table[m][n]
+                    length_table[i][j] = 0
+        
+        return longest 
     
 class eval_Event:
     def __init__(self, path) -> None:
@@ -487,14 +508,14 @@ class eval_Ranking:
          
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--event_or_relation', '-t',
-                        choices=["Relation", "Event"],
+    # parser.add_argument('--event_or_relation', '-t',
+    #                     choices=[],
+    #                     type=str,
+    #                     default='Event')
+    parser.add_argument('--Generation', '-g',
+                        choices=["Relation", "Event", "question", "answer","ranking"],
                         type=str,
                         default='Event')
-    parser.add_argument('--Generation', '-g',
-                        choices=["tagging", "question", "answer","ranking"],
-                        type=str,
-                        default='tagging')
     parser.add_argument('--Model', '-m',
                         choices=['Mt0', 'T5', 'T5_base', 'T5_small', 'bart', 'roberta', 'gemma', 'flant5', 'gemini', 'openai', 'distil', 'deberta'],
                         type=str,
@@ -504,36 +525,33 @@ if __name__ == '__main__':
                         default=False)
     args = parser.parse_args()
     
-    if args.Generation == 'tagging' :
-        print('Tagging : ', args.event_or_relation)
     print('Generation : ', args.Generation)
     print('Model :', args.Model, '\n')
     
-    path = checkdir('save_model', args.event_or_relation, args.Generation, args.Model, args.Answer)
+    path = checkdir('save_model', args.Generation, args.Model, args.Answer)
 
-    if args.Generation == 'tagging' :
-        if args.event_or_relation == 'Event':
-            eval = eval_Event(path + f'{args.Generation}.csv')
-            f1_i, f1_c = eval.NER_eval()
+    if args.Generation == 'Event':
+        eval = eval_Event(path + f'tagging.csv')
+        f1_i, f1_c = eval.NER_eval()
 
-            print('f1_c : ', f1_c)
-            print('f1_i : ', f1_i)   
-        elif args.event_or_relation == 'Relation':
-            eval = eval_Realtion(path + f'{args.Generation}.csv')
-            # eval.process_label()
-            record, bleu_score = eval.bleu_eval()
-            record, s_score, o_score = eval.Sentence_Overlap_eval(record)
-            
-            num = len(eval.dataset)
-            print("BLEU-1 : ", round(bleu_score[0]/num, 2))
-            print("BLEU-2 : ", round(bleu_score[1]/num, 2))
-            print("BLEU-3 : ", round(bleu_score[2]/num, 2))
-            print("BLEU-4 : ", round(bleu_score[3]/num, 2))
-            print("Overlap Ratio : ", round(o_score['label']/num, 2))
-            print("Overlap Ratio non_label: ", round(o_score['non_label']/num, 2))
-            print("SentenceTransformer : ", round(s_score['label']/num, 2))
-            print("SentenceTransformer non_label : ", round(s_score['non_label']/num, 2))
-            save_csv(record, path + 'score.csv', args.Generation)
+        print('f1_c : ', f1_c)
+        print('f1_i : ', f1_i)   
+    elif args.Generation == 'Relation':
+        eval = eval_Realtion(path + f'tagging.csv')
+        # eval.process_label()
+        record, bleu_score = eval.bleu_eval()
+        record, s_score, o_score = eval.Sentence_Overlap_eval(record)
+        
+        num = len(eval.dataset)
+        print("BLEU-1 : ", round(bleu_score[0]/num, 2))
+        print("BLEU-2 : ", round(bleu_score[1]/num, 2))
+        print("BLEU-3 : ", round(bleu_score[2]/num, 2))
+        print("BLEU-4 : ", round(bleu_score[3]/num, 2))
+        print("Overlap Ratio : ", round(o_score['label']/num, 2))
+        print("Overlap Ratio non_label: ", round(o_score['non_label']/num, 2))
+        print("SentenceTransformer : ", round(s_score['label']/num, 2))
+        print("SentenceTransformer non_label : ", round(s_score['non_label']/num, 2))
+        save_csv(record, path + 'score.csv', args.Generation)
     elif args.Generation == 'question':
         eval = eval_Question(path + f'{args.Generation}.csv')
         record, s_score, bleu_score = eval.SentT()

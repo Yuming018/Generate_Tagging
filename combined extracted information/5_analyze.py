@@ -117,6 +117,8 @@ def statistics_data(dataset, Event_count, categories, our_or_llm):
         if our_or_llm == 'our':
             ques = data[2].split('[')[1]
             research_idx = -5
+            if 'False' in data[6]:
+                continue
         elif our_or_llm == 'llm':
             ques = data[3].split('.')[-1]
             research_idx = -1
@@ -125,7 +127,7 @@ def statistics_data(dataset, Event_count, categories, our_or_llm):
             research_idx = -2
         count += 1
         
-        if our_or_llm == 'llm' or our_or_llm == 'fairytale' or data[5] == 'why':
+        if our_or_llm == 'llm' or our_or_llm == 'fairytale' or our_or_llm == 'our':#or data[5] == 'why':
             if 'who' in ques or 'Who' in ques:
                 q_type = 'who'
             elif 'when' in ques or 'When' in ques:
@@ -201,10 +203,15 @@ def cal_ratio(record):
                 record[range_label][q_type][level] = round(record[range_label][q_type][level] / total, 2)
     return record
 
-def main(method, exampler = 5):
-    dataset_2 = get_data(f'csv/4_correct_ratio_2_{method}.csv')
-    dataset_3 = get_data(f'csv/4_correct_ratio_3_{method}.csv')
-    dataset_4 = get_data(f'csv/4_correct_ratio_4_{method}.csv')
+def main(method, exampler = 5, answer = False):
+    if answer:
+        dataset_2 = get_data(f'csv/4_w_ans_correct_ratio_2_{method}.csv')
+        dataset_3 = get_data(f'csv/4_w_ans_correct_ratio_3_{method}.csv')
+        dataset_4 = get_data(f'csv/4_w_ans_correct_ratio_4_{method}.csv')
+    elif not answer:
+        dataset_2 = get_data(f'csv/4_wo_ans_correct_ratio_2_{method}.csv')
+        dataset_3 = get_data(f'csv/4_wo_ans_correct_ratio_3_{method}.csv')
+        dataset_4 = get_data(f'csv/4_wo_ans_correct_ratio_4_{method}.csv')
 
     llm_dataset_respective = get_data(f'csv/4_llm_correct_ratio_5_respective.csv')
     llm_dataset_together = get_data(f'csv/4_llm_correct_ratio_5_together.csv')
@@ -246,6 +253,8 @@ def main(method, exampler = 5):
         for level in stat_type_4[type]:
             total_record[4][level] += stat_type_4[type][level]
     
+    print(total_record)
+    input()
 
     # processed_total = process_data(total_record, categories)
     # display_question_defficulty_histogram(processed_total, categories, 'Question type total', "", x_label='number of events')
@@ -315,8 +324,9 @@ def main(method, exampler = 5):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--method', '-m', type=str, choices=['gemini', 'gpt', 'cosine60', 'cosine50', 'cosine55', 'cosine53', 'cosine52'], default='cosine52')
+    parser.add_argument('--Answer', '-a', type=bool, default=False)
+    parser.add_argument('--method', '-m', type=str, choices=['gemini', 'gpt', 'cosine60', 'cosine50', 'cosine55', 'cosine53', 'cosine52'], default='cosine53')
     parser.add_argument('--exampler', '-e', type=int, default=5)
     args = parser.parse_args()
     
-    main(method=args.method, exampler = args.exampler)
+    main(method=args.method, exampler = args.exampler, answer=args.Answer)

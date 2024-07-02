@@ -85,7 +85,7 @@ def Mt0(test_mode, model_path):
     lora_config = LoraConfig(
         task_type=TaskType.SEQ_2_SEQ_LM,
         inference_mode=False,
-        r=12,
+        r=8,
         lora_alpha=32, 
         lora_dropout=0.1,
     )

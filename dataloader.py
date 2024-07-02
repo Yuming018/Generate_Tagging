@@ -91,6 +91,7 @@ class Extraction_Datasets:
         
         text = create_prompt(self.model_name, self.tagging_type, context)
         encoded_sent = enconder(self.tokenizer, self.max_len, text = text)
+        
         # print(encoded_sent.get('input_ids'))
         # print(self.tokenizer.decode(encoded_sent.get('input_ids'), skip_special_tokens=True))  
         # input()     
@@ -189,36 +190,38 @@ class Question_generation_Datasets:
                             #  question_words=self.dataset[story_list[0]][2].split(" ")[0]
                             )
 
-        # if self.path == 'data/test.csv':
-        #     while self.event_idx < len(self.Evnet_tagging) and self.Evnet_tagging[self.event_idx][0] == story_name:
-        #         tagging = self.Evnet_tagging[self.event_idx][2].replace('[END]', '')
-        #         text += tagging
-        #         self.event_idx += 1
-        #     while self.realtion_idx < len(self.Relation_tagging) and self.Relation_tagging[self.realtion_idx][0] == story_name:
-        #         tagging = self.Relation_tagging[self.realtion_idx][2].replace('[END]', '')
-        #         text += tagging
-        #         self.realtion_idx += 1
-        #     text += '[END]'
-        # else:  
-        for idx in story_list:
-            tagging_type = 'Event' if self.dataset[idx][5] else 'Relation'
-            tagging = self.dataset[idx][5] if self.dataset[idx][5] else self.dataset[idx][6]
-            text += f"[{tagging_type}] {tagging}"
+        if self.path == 'data/test.csv':
+            while self.event_idx < len(self.Evnet_tagging) and self.Evnet_tagging[self.event_idx][0] == story_name:
+                tagging = self.Evnet_tagging[self.event_idx][2].replace('[END]', '')
+                text += tagging
+                self.event_idx += 1
+            while self.realtion_idx < len(self.Relation_tagging) and self.Relation_tagging[self.realtion_idx][0] == story_name:
+                tagging = self.Relation_tagging[self.realtion_idx][2].replace('[END]', '')
+                text += tagging
+                self.realtion_idx += 1
+            if not self.gen_Answer:
+                text += f' [Answer] {self.dataset[story_list[0]][3]} '
+            text += "[END]"
+        else:  
+            for idx in story_list:
+                tagging_type = 'Event' if self.dataset[idx][5] else 'Relation'
+                tagging = self.dataset[idx][5] if self.dataset[idx][5] else self.dataset[idx][6]
+                text += f"[{tagging_type}] {tagging}"
 
-            for i in range(7, len(self.dataset[idx])):
-                if self.dataset[idx][i] != '':
-                    left_parenthesis_index = self.dataset[idx][i].rfind('(')
-                    if tagging_type == 'Relation' and i == 7:
-                        text += " [Event1] " + "".join(self.dataset[idx][i][:left_parenthesis_index])
-                    elif tagging_type == 'Relation' and i == 8:
-                        text += " [Event2] " + "".join(self.dataset[idx][i][:left_parenthesis_index])
-                    elif tagging_type == 'Event':
-                        temp = " ".join(self.dataset[idx][i][:left_parenthesis_index].split(' - ')[1:])
-                        text += f"[{self.dataset[idx][i][:left_parenthesis_index].split(' - ')[0]}] {temp} "
-        if not self.gen_Answer:
-            text += f' [Answer] {self.dataset[story_list[0]][3]} '
-        text += "[END]"
-
+                for i in range(7, len(self.dataset[idx])):
+                    if self.dataset[idx][i] != '':
+                        left_parenthesis_index = self.dataset[idx][i].rfind('(')
+                        if tagging_type == 'Relation' and i == 7:
+                            text += " [Event1] " + "".join(self.dataset[idx][i][:left_parenthesis_index])
+                        elif tagging_type == 'Relation' and i == 8:
+                            text += " [Event2] " + "".join(self.dataset[idx][i][:left_parenthesis_index])
+                        elif tagging_type == 'Event':
+                            temp = " ".join(self.dataset[idx][i][:left_parenthesis_index].split(' - ')[1:])
+                            text += f"[{self.dataset[idx][i][:left_parenthesis_index].split(' - ')[0]}] {temp} "
+            if not self.gen_Answer:
+                text += f' [Answer] {self.dataset[story_list[0]][3]} '
+            text += "[END]"
+        
         encoded_sent = enconder(self.tokenizer, self.max_len, text = text)
         # print(encoded_sent.get('input_ids'))
         # print(self.tokenizer.decode(encoded_sent.get('input_ids'), skip_special_tokens=True))

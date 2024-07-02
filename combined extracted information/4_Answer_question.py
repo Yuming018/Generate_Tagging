@@ -16,7 +16,7 @@ sentence_model = SentenceTransformer('bert-base-nli-mean-tokens')
 
 def load_model(model_name):
     Generation = 'answer'
-    path_save_model = checkdir('../save_model', None, Generation, model_name, gen_answer = False)
+    path_save_model = checkdir('../save_model', Generation, model_name, gen_answer = False)
     Bart_model, Bart_tokenizer = create_model(model_name, Generation, test_mode = True, path_save_model = path_save_model)
     return Bart_model, Bart_tokenizer
 
@@ -27,7 +27,7 @@ def get_data(path):
 
 def save_csv(record, path, our_or_llm):
     if our_or_llm == 'our':
-        row = ['Paragraph', 'Context', 'Prediction', 'Reference', 'Input_text', 'Question type', 'Golden Answer', 'label', 'T5 small ans', 'T5 base ans', 'T5 large ans', 'Correct ans ratio', 'Question_difficulty', 'SentenceBert', 'Event graph', 'Relation graph']
+        row = ['Paragraph', 'Context', 'Prediction', 'Reference', 'Input_text', 'Extraction type', 'Question type', 'Golden Answer', 'T5 small ans', 'T5 base ans', 'T5 large ans', 'Correct ans ratio', 'Question_difficulty', 'SentenceBert', 'Event graph', 'Relation graph']
     elif our_or_llm == 'llm':
         row = ['Paragraph', 'Context', 'Difficulty level', 'Prediction', 'Golden Answer', 'T5 small ans', 'T5 base ans', 'T5 large ans', 'Correct ans ratio']
     elif our_or_llm == 'fairytale':
@@ -81,9 +81,12 @@ def is_answer_correct(context, golden_ans, text, model, tokenizer):
 
     return (1, ans) if 'Yes' in gpt_response or 'yes' in gpt_response else (0, ans)
 
-def main(ranking_model = 'deberta', device = 'cpu', Event_count = 2, our_or_llm ='our', exampler = 5):
+def main(device = 'cpu', Event_count = 2, our_or_llm ='our', exampler = 5, answer = False):
     if our_or_llm == 'our':
-        dataset = get_data(f'csv/3_question_w_golden_ans_{Event_count}.csv')
+        if answer:
+            dataset = get_data(f'csv/3_question_ans_w_golden_ans_{Event_count}.csv')
+        elif not answer:
+            dataset = get_data(f'csv/3_question_w_golden_ans_{Event_count}.csv')
     elif our_or_llm == 'llm':
         dataset = get_data(f'csv/3_llm_question_w_golden_ans_{exampler}.csv')
     elif our_or_llm == 'fairytale':
@@ -110,7 +113,10 @@ def main(ranking_model = 'deberta', device = 'cpu', Event_count = 2, our_or_llm 
             ques = pred[0].split(']')[1]
             golden_ans = data[6]
             insert_index = 8
-            save_path = f'csv/4_correct_ratio_{Event_count}.csv'
+            if answer:
+                save_path = f'csv/4_w_ans_correct_ratio_{Event_count}.csv'
+            elif not answer:
+                save_path = f'csv/4_wo_ans_correct_ratio_{Event_count}.csv'
         elif our_or_llm == 'llm':
             context = data[1]
             ques = data[3].split('.')[-1]
@@ -140,53 +146,39 @@ def main(ranking_model = 'deberta', device = 'cpu', Event_count = 2, our_or_llm 
             golden_ans = data[3]
             insert_index = 5
             save_path = f'csv/4_fairytale_w_llm_correct_ratio.csv'
+        
         correct_ans_count = 0
+        text = f'{ques} <SEP> {context}'
+        # count, bart_ans = is_answer_correct(context, gpt_ans, text, Bart_model, Bart_tokenizer)
+        # correct_ans_count += count
+        count, T5_small_ans = is_answer_correct(context, golden_ans, text, T5_small_model, T5_small_tokenizer)
+        correct_ans_count += count
+        count, T5_base_ans = is_answer_correct(context, golden_ans, text, T5_base_model, T5_base_tokenizer)
+        correct_ans_count += count
+        count, T5_ans = is_answer_correct(context, golden_ans, text, T5_model, T5_tokenizer)
+        correct_ans_count += count
 
-        if our_or_llm == 'llm' or our_or_llm == 'fairytale' or our_or_llm == 'fairytale_w_llm' or data[7] == 'Can answer':
-            # gpt_text = f'Find the answer from the context and respond simply. Question : {ques}, Context : {context}'
-            
-            # retry_count = 0
-            # gpt_ans = ""  
-            # while retry_count < 5:
-            #     try:
-            #         gpt_ans = geminiapi(gpt_text, temperature=0)
-            #         break 
-            #     except Exception as e:
-            #         print(f"An error occurred: {e}")
-            #         retry_count += 1
-            #         time.sleep(10)
-            
-            text = f'{ques} <SEP> {context}'
-            # count, bart_ans = is_answer_correct(context, gpt_ans, text, Bart_model, Bart_tokenizer)
-            # correct_ans_count += count
-            count, T5_small_ans = is_answer_correct(context, golden_ans, text, T5_small_model, T5_small_tokenizer)
-            correct_ans_count += count
-            count, T5_base_ans = is_answer_correct(context, golden_ans, text, T5_base_model, T5_base_tokenizer)
-            correct_ans_count += count
-            count, T5_ans = is_answer_correct(context, golden_ans, text, T5_model, T5_tokenizer)
-            correct_ans_count += count
-
-            data = list(data)
-            data.insert(insert_index, T5_small_ans)
-            data.insert(insert_index+1, T5_base_ans)
-            data.insert(insert_index+2, T5_ans)
-            data.insert(insert_index+3, correct_ans_count)
-            record.append(data)
-            
-            save_csv(record, save_path, our_or_llm)
+        data = list(data)
+        data.insert(insert_index, T5_small_ans)
+        data.insert(insert_index+1, T5_base_ans)
+        data.insert(insert_index+2, T5_ans)
+        data.insert(insert_index+3, correct_ans_count)
+        record.append(data)
+        
+        save_csv(record, save_path, our_or_llm)
         
     return
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--Ranking_model', '-r', type=str, choices=['distil', 'deberta'], default='deberta')
     parser.add_argument('--our_or_llm', '-m', type=str, choices=['our', 'llm', 'fairytale', 'fairytale_w_llm'], default='our')
+    parser.add_argument('--Answer', '-a', type=bool, default=False)
     parser.add_argument('--Event_count', '-c', type=int, default=2)
     parser.add_argument('--exampler', '-e', type=int, default=5)
     args = parser.parse_args()
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    main(ranking_model = args.Ranking_model, 
-         device = device, 
+    main(device = device, 
          Event_count = args.Event_count, 
          our_or_llm = args.our_or_llm, 
-         exampler = args.exampler)
+         exampler = args.exampler,
+         answer = args.Answer)

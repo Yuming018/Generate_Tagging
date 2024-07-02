@@ -6,15 +6,16 @@ from transformers import GenerationConfig
 def seq2seq_inference(model_name, model, tokenizer, test_dataloader, test_data_paprgraph, device, save_file_path, path_save_model):
 
     generation_config = GenerationConfig(
-        max_length=100,
+        max_length=200,
         early_stopping=False,
         decoder_start_token_id=0,
         eos_token_id=model.config.eos_token_id,
         pad_token_id=model.config.eos_token_id,
         penalty_alpha=0.6, 
-        top_k=4, 
-        temperature=0.5,
+        top_k=50, 
+        temperature=0.8,
         max_new_tokens=512,
+        do_sample = True,
     )
 
     prediction, target, context, paragraph = [], [], [], []
@@ -25,7 +26,9 @@ def seq2seq_inference(model_name, model, tokenizer, test_dataloader, test_data_p
     for data, para in tqdm(zip(test_dataloader, test_data_paprgraph)):
         input_ids, label = data['input_ids'], data['labels']
         input_ids = torch.tensor(input_ids).to(device)
-        output = model.generate(input_ids=input_ids.unsqueeze(0), max_new_tokens=100)
+        output = model.generate(input_ids=input_ids.unsqueeze(0), max_new_tokens=100, 
+                                generation_config = generation_config
+                                )
         prediction.append(tokenizer.decode(output[0], skip_special_tokens=True))
         # print(tokenizer.decode(output[0], skip_special_tokens=True))
         # print(tokenizer.decode(input_ids, skip_special_tokens=True))

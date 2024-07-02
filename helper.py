@@ -76,12 +76,12 @@ def create_prompt(model_name, generate_type, context, question_type = None, gen_
             text = (question, context)
     elif generate_type == 'question':
         if model_name == 'Mt0' or model_name == 'gemma' or model_name == 'flant5':
-            if gen_Answer:
+            if not gen_Answer:
                 text = f"Please utilize the provided context, answer and key information to generate {question_type} question for this context [Context] {context} "
-            elif not gen_Answer:
-                text = f"Please utilize the provided context and key information to generate {question_type} question ans answer for this context [Context] {context} "
+            elif gen_Answer:
+                text = f"Please utilize the provided context and key information to generate {question_type} question and answer for this context [Context] {context} "
         elif model_name == 'T5' or model_name == 'Bart' or model_name == 'roberta':
-            text = f"[Context] {context} "
+            text = f"[Question type] {question_type} [Context] {context} "
     elif generate_type == 'ranking':
         if model_name == 'distil':
             text = f"[CLS] {context} "
