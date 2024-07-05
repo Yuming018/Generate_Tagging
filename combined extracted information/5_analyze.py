@@ -210,8 +210,8 @@ def main(method, exampler = 5, answer = False):
         dataset_4 = get_data(f'csv/4_w_ans_correct_ratio_4_{method}.csv')
     elif not answer:
         dataset_2 = get_data(f'csv/4_wo_ans_correct_ratio_2_{method}.csv')
-        dataset_3 = get_data(f'csv/4_wo_ans_correct_ratio_3_{method}.csv')
-        dataset_4 = get_data(f'csv/4_wo_ans_correct_ratio_4_{method}.csv')
+        dataset_3 = get_data(f'csv/4_wo_ans_correct_ratio_3.csv')
+        dataset_4 = get_data(f'csv/4_wo_ans_correct_ratio_4.csv')
 
     llm_dataset_respective = get_data(f'csv/4_llm_correct_ratio_5_respective.csv')
     llm_dataset_together = get_data(f'csv/4_llm_correct_ratio_5_together.csv')

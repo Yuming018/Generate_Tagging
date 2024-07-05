@@ -64,18 +64,18 @@ def is_answer_correct(context, golden_ans, text, model, tokenizer):
     #         retry_count += 1
     #         time.sleep(10)
     
-    # sntence_t
-    # print(ans, golden_ans)
-    # query_embedding = snet_T.encode(golden_ans)
-    # passage_embedding = snet_T.encode(ans)
-    # result = util.dot_score(query_embedding, passage_embedding)
+    # sntence_bert
+    query_embedding = snet_T.encode(golden_ans)
+    passage_embedding = snet_T.encode(ans)
+    result = util.dot_score(query_embedding, passage_embedding)
     # print(result)
+    # input()
 
     # Cosine similarity
-    embeddings1 = sentence_model.encode([ans])
-    embeddings2 = sentence_model.encode([golden_ans])
-    result = cosine_similarity(embeddings1, embeddings2)
-    if result[0][0] > 0.52:
+    # embeddings1 = sentence_model.encode([ans])
+    # embeddings2 = sentence_model.encode([golden_ans])
+    # result = cosine_similarity(embeddings1, embeddings2)
+    if result[0][0] >= 0.50:
         return (1, ans)
     return (0, ans)
 
@@ -90,7 +90,7 @@ def main(device = 'cpu', Event_count = 2, our_or_llm ='our', exampler = 5, answe
     elif our_or_llm == 'llm':
         dataset = get_data(f'csv/3_llm_question_w_golden_ans_{exampler}.csv')
     elif our_or_llm == 'fairytale':
-        dataset = get_data('../data/train.csv')
+        dataset = get_data('../data/test.csv')
     elif our_or_llm == 'fairytale_w_llm':
         dataset = get_data('csv/3_fairytale_question_w_golden.csv')
 
@@ -111,8 +111,10 @@ def main(device = 'cpu', Event_count = 2, our_or_llm ='our', exampler = 5, answe
             context = data[1]
             pred = data[2].split('[')[1:-1]
             ques = pred[0].split(']')[1]
-            golden_ans = data[6]
+            golden_ans = data[7]
             insert_index = 8
+            if 'False' in golden_ans:
+                continue
             if answer:
                 save_path = f'csv/4_w_ans_correct_ratio_{Event_count}.csv'
             elif not answer:
@@ -124,8 +126,6 @@ def main(device = 'cpu', Event_count = 2, our_or_llm ='our', exampler = 5, answe
             insert_index = 5
             save_path = f'csv/4_llm_correct_ratio_{exampler}.csv'
         elif our_or_llm == 'fairytale':
-            if idx < 7000:
-                continue
             paragraph = data[4]
             if curr_para == paragraph:
                 continue
@@ -136,10 +136,8 @@ def main(device = 'cpu', Event_count = 2, our_or_llm ='our', exampler = 5, answe
             golden_ans = data[3]
             data = [data[4]] + list(data)[1:4] + [data[0]]
             insert_index = 4
-            # save_path = f'csv/4_fairytale_correct_ratio.csv'
-            save_path = f'csv/4_aaa.csv'
-            if idx == 7070:
-                break
+            save_path = f'csv/4_fairytale_correct_ratio.csv'
+
         elif our_or_llm == 'fairytale_w_llm':
             context = data[1]
             ques = data[2]

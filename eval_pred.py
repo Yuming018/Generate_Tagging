@@ -414,7 +414,8 @@ class eval_Question:
         for idx in tqdm(self.pred_dict):
             pred = self.pred_dict[idx]
             tar = self.tar_dict[idx]
-
+            print(pred['Question'], tar['Question'])
+            input()
             result = metric.compute(predictions=[pred['Question']], references=[tar['Question']])
             bleu_1 = round(result['precisions'][0], 2)
             bleu_2 = round(result['precisions'][1], 2)

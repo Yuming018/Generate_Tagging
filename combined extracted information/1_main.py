@@ -54,8 +54,9 @@ def main(device = 'cpu',
         
         # if count == 0:
         # if paragraph == 'anent-giant-who-did-not-have-his-heart-about-him15 ~ 17':
+        if idx < 106:
+            continue
         print('\n', paragraph)
-        
         question_set, score_set, text_set, question_difficulty, question_5w1h, generate_question_type, Event_graph, Relation_graph = create_knowledge_graph(gen_answer, 
                                                                                                                                     context, 
                                                                                                                                     target, 
@@ -73,16 +74,15 @@ def main(device = 'cpu',
             record['gen_question_type'].append(q_type)
             record['question_difficulty'].append(difficulty)
             record['eval_score'].append(score)
-            record['Event_graph'].append(Event_graph)
-            record['Relation_graph'].append(Relation_graph)
-            
-        save_csv(record, path = f'csv/1_predict_{Event_count}.csv')
-        
-        # if len(record['predict']) > 800:
-        #     break
+            record['Event_graph'].append('Event_graph')
+            record['Relation_graph'].append('Relation_graph')
+
+        if gen_answer: 
+            save_csv(record, path = f'csv/1_predict_w_ans_{Event_count}.csv')
+        else:
+            save_csv(record, path = f'csv/1_predict_{Event_count}.csv')
+
         count += 1
-        # if count > 6:
-        #     break
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()

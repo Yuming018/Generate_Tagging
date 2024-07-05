@@ -39,9 +39,8 @@ def count_golden_ans(answer, Event_count):
     record = get_data(path)
     stat = Counter()
     for data in record:
-        if data[8] == 'Can not answer':
-            continue
-        golden_ans = data[6]
+
+        golden_ans = data[7]
         temp = data[4].split('[')[1:-1]
         ref_ans = temp[-1].split(']')[1]
         
@@ -83,8 +82,8 @@ if __name__ == '__main__':
                         default=2)
     args = parser.parse_args()
 
-    # count_not_answer(args.Model, args.Answer, args.Event_count)
+    count_not_answer(args.Model, args.Answer, args.Event_count)
 
-    count_golden_ans(args.Answer, args.Event_count)
+    # count_golden_ans(args.Answer, args.Event_count)
 
     # count_all_paragraph()

@@ -74,18 +74,19 @@ def create_knowledge_graph(gen_answer,
     
     Event_graph, Relation_graph = defaultdict(defaultdict), defaultdict(defaultdict)
     
-    # #old
-    # for idx in tqdm(range(len(new_lines))):
-    #     temp_context = new_lines[idx]
-    #     text = create_prompt(model_name, generate_type = 'Event', context = temp_context)
-    #     tagging = generate_tagging(f'../save_model/Event/{model_name}/', model_name, text, tokenizer, device)
-    #     Event_graph[idx]['text'] = temp_context
-    #     for tag in tagging.split('[')[1:-1]:
-    #         try:
-    #             key, entity = tag.split(']')
-    #             Event_graph[idx][key] = entity
-    #         except:
-    #             print(tagging)
+    #old
+    print('\nEvent extraction...')
+    for idx in tqdm(range(len(new_lines))):
+        temp_context = new_lines[idx]
+        text = create_prompt(model_name, generate_type = 'Event', context = temp_context)
+        tagging = generate_tagging(f'../save_model/Event/{model_name}/', model_name, text, tokenizer, device)
+        Event_graph[idx]['text'] = temp_context
+        for tag in tagging.split('[')[1:-1]:
+            try:
+                key, entity = tag.split(']')
+                Event_graph[idx][key] = entity
+            except:
+                print(tagging)
     
     #new
     # event_set = set()
@@ -153,6 +154,7 @@ def create_knowledge_graph(gen_answer,
     #         relation_set.add(tagging)
     
     # new
+    print('\nRelation extraction...')
     relation_set = set()
     relation_idx, relation_count = 0, 0
     while relation_count < 5:
@@ -217,18 +219,18 @@ def create_knowledge_graph(gen_answer,
     question_set, score_set, text_set, question_difficulty, question_5w1h, generate_question_type = [], [], [], [], [], []
     allennlp_pred = corf_resolution(context)
 
-    # print('\nEvent')
-    # event_question, event_score, event_text, event_difficulty, event_question_type = connect_event_graph(gen_answer, context, Event_graph, tokenizer, device, target, model_name, allennlp_pred, new_lines, Event_count)
-    # for question, score, text, difficulty, q_type in zip(event_question, event_score, event_text, event_difficulty, event_question_type):
-    #     if question not in question_set:
-    #         question_set.append(question)
-    #         score_set.append(score)
-    #         text_set.append(text)
-    #         question_difficulty.append(difficulty)
-    #         question_5w1h.append('Event')
-    #         generate_question_type.append(q_type)
+    print('\nEvent question generation...')
+    event_question, event_score, event_text, event_difficulty, event_question_type = connect_event_graph(gen_answer, context, Event_graph, tokenizer, device, target, model_name, allennlp_pred, new_lines, Event_count)
+    for question, score, text, difficulty, q_type in zip(event_question, event_score, event_text, event_difficulty, event_question_type):
+        if question not in question_set:
+            question_set.append(question)
+            score_set.append(score)
+            text_set.append(text)
+            question_difficulty.append(difficulty)
+            question_5w1h.append('Event')
+            generate_question_type.append(q_type)
 
-    # # print('Relation') 
+    print('\nRelation question generation...')
     relation_question, relation_score, relation_text, relation_difficulty, relation_question_type = connect_relation_graph(gen_answer, context, Relation_graph, tokenizer, device, target, model_name, Event_count)
     for question, score, text, difficulty, q_type in zip(relation_question, relation_score, relation_text, relation_difficulty, relation_question_type):
         if question not in question_set:
@@ -276,7 +278,7 @@ def check_high_overlap(tagging, tagging2):
     return max_overlap > 1.6
 
 def generate_tagging(path_save_model, model_name, text, tokenizer, device):
-    input_ids = enconder(tokenizer, max_len=768, text=text)
+    input_ids = enconder(tokenizer, max_len=1024, text=text)
     input_ids = torch.tensor(input_ids.get('input_ids')).to(device)
     # print(tokenizer.decode(input_ids, skip_special_tokens=True))
     # input()
@@ -297,7 +299,7 @@ def generate_question(model_name, gen_answer, text, target, tokenizer, device):
         path_save_model = f'../save_model/QA_pair/{model_name}/'
     elif not gen_answer:
         path_save_model = f'../save_model/question/{model_name}/'
-    input_ids = enconder(tokenizer, max_len=768, text=text)
+    input_ids = enconder(tokenizer, max_len=1024, text=text)
     input_ids = torch.tensor(input_ids.get('input_ids')).to(device)
 
     question_ids = create_question(path_save_model = path_save_model, model_name = model_name, input_ids = input_ids, device = device)
@@ -337,7 +339,8 @@ def connect_event_graph(gen_answer, context, Event_graph, tokenizer, device, tar
             for arg in ['Speaker', 'Actor', 'Direct Object', 'Addressee', 'Agent', 'Entity']:
                 if arg in Event_graph[idx].keys():
                     subject = " ".join(Event_graph[idx][arg].split(' ')[1:-1])
-                    corf, final_subject, difficulty = check_corf(subject, allennlp_pred, new_lines, idx)
+                    if len(subject):
+                        corf, final_subject, difficulty = check_corf(subject, allennlp_pred, new_lines, idx)
                     if corf != "":
                         text += corf
                         have_arg += 1
@@ -347,31 +350,50 @@ def connect_event_graph(gen_answer, context, Event_graph, tokenizer, device, tar
                             answer_list.add(final_subject)
             
             if have_arg == Event_count - 1:
-                for answer in answer_list:
-                    fianl_text = text + f'[Answer] {answer} [END]'
+                if not gen_answer:
+                    for answer in answer_list:
+                        fianl_text = text + f'[Answer] {answer} [END]'
+                        event_question, e_score = generate_question(model_name, gen_answer, fianl_text, target, tokenizer, device)
+                        event_question_set.append(event_question)
+                        event_score.append(e_score)
+                        event_text.append(fianl_text)
+                        event_difficulty.append(corf_range)
+                        event_question_type.append(q_type)
+                else:
+                    fianl_text = text + f' [END]'
                     event_question, e_score = generate_question(model_name, gen_answer, fianl_text, target, tokenizer, device)
                     event_question_set.append(event_question)
                     event_score.append(e_score)
                     event_text.append(fianl_text)
                     event_difficulty.append(corf_range)
                     event_question_type.append(q_type)
+                
                                         
     return event_question_set, event_score, event_text, event_difficulty, event_question_type
 
 def check_corf(subject, allennlp_pred, new_lines, idx):
-    match_ratio = 0
+    max_ratio = 0
+    
+    # text_len = 0
+    # word_list = []
+    # for arg in Event_graph[idx]:
+    #     if arg not in ['text', 'Event 1']:
+    #         text_len += (len(Event_graph[idx][arg].split(' ')))
+    #         word_list += [word for word in Event_graph[idx][arg].split(' ') if word != '']
     text_len = len(new_lines[idx].split(' '))
     for word_idx in range(len(allennlp_pred['document'])):
         text = ' '.join(allennlp_pred['document'][word_idx:word_idx+text_len])
-        # ratio = longest_common_subsequence(text, new_lines[idx])
+        # for word in word_list:
+        #     if word in text :
+        #         ratio += 1
         match_len = longest_common_subsequence_entity(text, new_lines[idx])
         ratio = match_len / len(new_lines[idx])
-        if match_ratio < ratio:
-            match_ratio = ratio
+        if max_ratio < ratio:
+            max_ratio = ratio
             boundary_front = word_idx
             boundary_back = word_idx + text_len
     
-    match_ratio = 0
+    max_ratio = 0
     pronoun, final_subject = "", ""
     final_subject_idx, pronoun_idx = 0, 0
     for entity_name in allennlp_pred['coreference']:
@@ -381,14 +403,14 @@ def check_corf(subject, allennlp_pred, new_lines, idx):
             # print(entity)
             match_len = longest_common_subsequence_entity(subject, entity)
             ratio = match_len / len(subject)
-            if ratio > 0.8 and match_ratio < ratio and span[0] >= boundary_front and span[1] < boundary_back:
-                match_ratio = ratio
+            if ratio > 0.8 and max_ratio < ratio and span[0] >= boundary_front and span[1] < boundary_back:
+                max_ratio = ratio
                 final_subject = entity
                 final_subject_idx = span[0]
                 pronoun = entity_name
                 pronoun_idx = allennlp_pred['coreference'][entity_name][0][0]
     
-    # print(match_ratio)
+    # print(max_ratio)
     # print(boundary_front, boundary_back)
     # print('subject : ', subject)
     # print('final subject : ', final_subject, final_subject_idx)
@@ -424,6 +446,9 @@ def longest_common_subsequence_entity(entity1, entity2):
 
 def connect_relation_graph(gen_answer, context, Relation_graph, tokenizer, device, target, model_name, Event_count):
     graph = defaultdict(list)
+    if len(Relation_graph) > 30:
+        return ['too many'], ['too many'], ['too many'], ['too many'], ['too many']
+    
     for idx in Relation_graph:
         if ['text', 'Relation 1', 'Event1', 'Event2'] != list(Relation_graph[idx].keys()):
             continue
@@ -502,9 +527,18 @@ def connect_relation_graph(gen_answer, context, Relation_graph, tokenizer, devic
                         print(check_event_idx(lines, Relation_graph[relation_idx]["Event1"]), check_event_idx(lines, Relation_graph[relation_idx]["Event2"]))
                         # input() 
                 
-                for answer in answer_list:
-                    fianl_text = text + f'[Answer] {answer} [END]'
+                if not gen_answer:
+                    for answer in answer_list:
+                        fianl_text = text + f'[Answer] {answer} [END]'
 
+                        relation_question, r_score = generate_question(model_name, gen_answer, fianl_text, target, tokenizer, device)
+                        relation_question_set.append(relation_question)
+                        relation_score.append(r_score)
+                        relation_text.append(fianl_text)
+                        relation_difficulty.append(max_event_idx - min_event_idx)
+                        relation_question_type.append(q_type)
+                else:
+                    fianl_text = text + f' [END]'
                     relation_question, r_score = generate_question(model_name, gen_answer, fianl_text, target, tokenizer, device)
                     relation_question_set.append(relation_question)
                     relation_score.append(r_score)

@@ -23,7 +23,7 @@ rouge_score
 
 
 #allennlp
-#spacy==3.3.3
+#spacy==3.7.4
 # python -m spacy download en_core_web_sm
 #allennlp
 #--pre allennlp-models

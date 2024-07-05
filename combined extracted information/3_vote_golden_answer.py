@@ -48,9 +48,9 @@ def main(ranking_model = 'deberta', answer = False, Event_count = 2, our_or_llm 
     record = []
     
     for idx, data in tqdm(enumerate(dataset)):
-        if idx < 770:
+        if idx < 900:
             continue
-        # if idx == 850:
+        # if idx == 900:
         #     break
         
         if our_or_llm == 'our':
@@ -68,7 +68,7 @@ def main(ranking_model = 'deberta', answer = False, Event_count = 2, our_or_llm 
                 save_path = f'csv/3_question_w_golden_ans_{Event_count}.csv'
                 temp = data[4].split('[')[1:-1]
                 ans = temp[-1].split(']')[1]
-            data = list(data)[:7] + list(data)[8:]
+            data = list(data)[:7] + list(data)[8:] # remove label
         elif our_or_llm == 'llm':
             context = data[1]
             ques = data[3].split('.')[-1]
@@ -104,7 +104,8 @@ def check_ans(ans, ques, context):
         correct_count = 0
         # gpt_text = f'Without considering completeness and details, is this answer correct in responding to this question? Please answer "Yes" or "No".Answer : {gemini_ans} Question : {ques}, Context : {context}'
         # gpt_text = f'Is this answer correct in responding to this question? Please answer "Yes" or "No".Answer : {ans}, Question : {ques}, Context : {context}'
-        gpt_text = f'Context : {context}.\nQuestion : {ques}.\nAnswer : {ans}.\nIs this answer correct in responding to this question? Please answer "Yes" or "No".'
+        gpt_text = f'Context : {context}.\nQuestion : {ques}.\nAnswer : {ans}\nIs this answer correct in responding to this question? Please answer "Yes" or "No".'
+
         retry_count_gpt = 0
         while retry_count_gpt < 5:
             try:
@@ -133,9 +134,7 @@ def check_ans(ans, ques, context):
                 retry_count_gemini += 1
                 time.sleep(10)
         retry_count += 1
-        # print(gpt_text)
-        # print(gpt_ans, gemini_ans)
-        # input()
+
         if correct_count == 2:
             break
     return True if correct_count == 2 else False
