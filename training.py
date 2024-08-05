@@ -145,15 +145,16 @@ def cls_training(model, tokenizer, train_data, valid_data, path_save_model, epoc
             per_device_eval_batch_size=batch_size,
             num_train_epochs=epochs,
             learning_rate=2e-5,
-            logging_steps=100,
+            logging_steps=500,
             evaluation_strategy="steps",
-            eval_steps=500,
+            eval_steps=1000,
             save_strategy="steps",
-            save_steps=500, 
+            save_steps=1000, 
             save_total_limit=1, 
             load_best_model_at_end = True,
             metric_for_best_model = 'eval_accuracy',
             weight_decay=0.01,
+            report_to="none",
         )
     collate_fn = DataCollatorWithPadding(tokenizer=tokenizer)
 

@@ -57,7 +57,6 @@ def main(batch_size = 4,
             ans_training(model, tokenizer, train_data, valid_data, path_save_model, epochs=epochs, batch_size = batch_size)
         elif Generation == 'ranking':
             cls_training(model, tokenizer, train_data, valid_data, path_save_model, epochs=epochs, batch_size = batch_size)
-        # train_model(model, train_dataloader, valid_dataloader, device, tokenizer=tokenizer, epochs=epochs, path_save_model = best_pth)
 
     if Generation == 'Event' or Generation == 'Relation' or Generation == 'question' or Generation == 'answer':
         seq2seq_inference(model_name, model, tokenizer, test_data, test_data.paragraph, device, save_file_path = file_name, path_save_model = path_save_model)

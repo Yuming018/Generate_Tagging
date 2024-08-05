@@ -3,7 +3,6 @@ import re
 import google.generativeai as genai
 from openai import OpenAI
 import configparser
-import anthropic
 
 def checkdir(path_save_model, Generation, model_name, gen_answer):
     
@@ -150,19 +149,6 @@ def geminiapi(content, temperature = 0):
     model = genai.GenerativeModel('gemini-pro', safety_settings = safetySettings)    
     response = model.generate_content(content)
     return response.text
-
-def calude_api(content):
-    config = check_config()
-    api_key = config['key']['openai_api_key']
-    client = anthropic.Anthropic(api_key = api_key)
-    message = client.messages.create(
-        model="claude-3-opus-20240229",
-        max_tokens=1024,
-        messages=[
-            {"role": "user", "content": content}
-        ]
-    )
-    return message.content
 
 if __name__ == '__main__':
     pass

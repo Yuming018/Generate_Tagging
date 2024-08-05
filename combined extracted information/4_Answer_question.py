@@ -12,8 +12,6 @@ import time
 from sklearn.metrics.pairwise import cosine_similarity
 from sentence_transformers import SentenceTransformer, util
 
-sentence_model = SentenceTransformer('bert-base-nli-mean-tokens')
-
 def load_model(model_name):
     Generation = 'answer'
     path_save_model = checkdir('../save_model', Generation, model_name, gen_answer = False)
@@ -42,44 +40,21 @@ def save_csv(record, path, our_or_llm):
             writer.writerow(record[i])
 
 def is_answer_correct(context, golden_ans, text, model, tokenizer):
-    snet_T = SentenceTransformer('multi-qa-MiniLM-L6-cos-v1')
+    
     input_ids = enconder(tokenizer, 512, text = text).get('input_ids')
     input_ids = torch.tensor(input_ids).to(device)
     output = model.generate(input_ids=input_ids.unsqueeze(0), max_new_tokens=100)
     ans = tokenizer.decode(output[0], skip_special_tokens=True)
     
-    # LLM response
-    # gpt_text = f"Based on the following text, are these two answers the same? Please answer 'Yes' or 'No'. Context : {context}, Answer 1 : {golden_ans}, Answer 2 : {ans}"
-    # gpt_response = ""
-    # retry_count = 0
-    # while retry_count < 5:
-    #     try:
-    #         gpt_response = gptapi(gpt_text,
-    #                             version=4,
-    #                             temperature=0)
-    #         if 'Yes' in gpt_response or 'yes' in gpt_response or 'No' in gpt_response or 'no' in gpt_response:
-    #             break 
-    #     except Exception as e:
-    #         print(f"An error occurred: {e}")
-    #         retry_count += 1
-    #         time.sleep(10)
-    
     # sntence_bert
-    query_embedding = snet_T.encode(golden_ans)
-    passage_embedding = snet_T.encode(ans)
-    result = util.dot_score(query_embedding, passage_embedding)
-    # print(result)
-    # input()
+    snet_T = SentenceTransformer('multi-qa-MiniLM-L6-cos-v1').to(device)
+    query_embedding = snet_T.encode(golden_ans, convert_to_tensor=True).to(device)
+    passage_embedding = snet_T.encode(ans, convert_to_tensor=True).to(device)
+    result = util.pytorch_cos_sim(query_embedding, passage_embedding)
 
-    # Cosine similarity
-    # embeddings1 = sentence_model.encode([ans])
-    # embeddings2 = sentence_model.encode([golden_ans])
-    # result = cosine_similarity(embeddings1, embeddings2)
-    if result[0][0] >= 0.50:
-        return (1, ans)
-    return (0, ans)
-
-    return (1, ans) if 'Yes' in gpt_response or 'yes' in gpt_response else (0, ans)
+    if result[0][0] >= 0.5:
+        return (1, ans, result[0][0])
+    return (0, ans, result[0][0])
 
 def main(device = 'cpu', Event_count = 2, our_or_llm ='our', exampler = 5, answer = False):
     if our_or_llm == 'our':
@@ -94,8 +69,6 @@ def main(device = 'cpu', Event_count = 2, our_or_llm ='our', exampler = 5, answe
     elif our_or_llm == 'fairytale_w_llm':
         dataset = get_data('csv/3_fairytale_question_w_golden.csv')
 
-    # Bart_model, Bart_tokenizer = load_model('bart')
-    # Bart_model.to(device)
     T5_model, T5_tokenizer = load_model('T5')
     T5_model.to(device)
     T5_small_model, T5_small_tokenizer = load_model('T5_small')
@@ -147,19 +120,17 @@ def main(device = 'cpu', Event_count = 2, our_or_llm ='our', exampler = 5, answe
         
         correct_ans_count = 0
         text = f'{ques} <SEP> {context}'
-        # count, bart_ans = is_answer_correct(context, gpt_ans, text, Bart_model, Bart_tokenizer)
-        # correct_ans_count += count
-        count, T5_small_ans = is_answer_correct(context, golden_ans, text, T5_small_model, T5_small_tokenizer)
+        count, T5_small_ans, T5_small_score = is_answer_correct(context, golden_ans, text, T5_small_model, T5_small_tokenizer)
         correct_ans_count += count
-        count, T5_base_ans = is_answer_correct(context, golden_ans, text, T5_base_model, T5_base_tokenizer)
+        count, T5_base_ans, T5_base_score = is_answer_correct(context, golden_ans, text, T5_base_model, T5_base_tokenizer)
         correct_ans_count += count
-        count, T5_ans = is_answer_correct(context, golden_ans, text, T5_model, T5_tokenizer)
+        count, T5_ans, T5_score = is_answer_correct(context, golden_ans, text, T5_model, T5_tokenizer)
         correct_ans_count += count
 
         data = list(data)
-        data.insert(insert_index, T5_small_ans)
-        data.insert(insert_index+1, T5_base_ans)
-        data.insert(insert_index+2, T5_ans)
+        data.insert(insert_index, T5_small_ans + f' ({round(float(T5_small_score), 2)})')
+        data.insert(insert_index+1, T5_base_ans + f' ({round(float(T5_base_score), 2)})')
+        data.insert(insert_index+2, T5_ans + f' ({round(float(T5_score), 2)})')
         data.insert(insert_index+3, correct_ans_count)
         record.append(data)
         
@@ -175,8 +146,22 @@ if __name__ == '__main__':
     parser.add_argument('--exampler', '-e', type=int, default=5)
     args = parser.parse_args()
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    print(device)
     main(device = device, 
          Event_count = args.Event_count, 
          our_or_llm = args.our_or_llm, 
          exampler = args.exampler,
          answer = args.Answer)
+		
+
+    # ans_list = ['his beautiful young wife to face the world alone.', 
+    #             'a little boy was born to her.',
+    #             'his beautiful young wife to face the world alone.']
+    # golden_ans = " to face the world alone "    
+    # for ans in ans_list:
+    #     print(ans)
+    #     snet_T = SentenceTransformer('multi-qa-MiniLM-L6-cos-v1').to(device)
+    #     query_embedding = snet_T.encode(golden_ans, convert_to_tensor=True).to(device)
+    #     passage_embedding = snet_T.encode(ans, convert_to_tensor=True).to(device)
+    #     result = util.pytorch_cos_sim(query_embedding, passage_embedding)
+    #     print(result)

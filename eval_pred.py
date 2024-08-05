@@ -174,16 +174,17 @@ class eval_Realtion:
         return record, sent_score, overlap_score
 
     def cal_sentence(self, pred_dict, tar_dict):
-        model = SentenceTransformer('multi-qa-MiniLM-L6-cos-v1')
+        # model = SentenceTransformer('multi-qa-MiniLM-L6-cos-v1')
+        model = SentenceTransformer('all-mpnet-base-v2')
         query_embedding_1 = model.encode(pred_dict['Event1'])
         passage_embedding_1 = model.encode(tar_dict['Event1'])
         query_embedding_2 = model.encode(pred_dict['Event2'])
         passage_embedding_2 = model.encode(tar_dict['Event2'])
 
-        result = util.dot_score(query_embedding_1, passage_embedding_1)
-        result2 = util.dot_score(query_embedding_1, passage_embedding_2)
-        result3 = util.dot_score(query_embedding_2, passage_embedding_1)
-        result4 = util.dot_score(query_embedding_2, passage_embedding_2)
+        result = util.cos_sim(query_embedding_1, passage_embedding_1)
+        result2 = util.cos_sim(query_embedding_1, passage_embedding_2)
+        result3 = util.cos_sim(query_embedding_2, passage_embedding_1)
+        result4 = util.cos_sim(query_embedding_2, passage_embedding_2)
 
         return max(round(result[0][0].item(), 2) + round(result4[0][0].item(), 2), round(result2[0][0].item(), 2) + round(result3[0][0].item(), 2)) /2
 
@@ -414,8 +415,6 @@ class eval_Question:
         for idx in tqdm(self.pred_dict):
             pred = self.pred_dict[idx]
             tar = self.tar_dict[idx]
-            print(pred['Question'], tar['Question'])
-            input()
             result = metric.compute(predictions=[pred['Question']], references=[tar['Question']])
             bleu_1 = round(result['precisions'][0], 2)
             bleu_2 = round(result['precisions'][1], 2)
@@ -433,13 +432,14 @@ class eval_Question:
         return record, sent_score, bleu_score
 
     def cal_sentT(self, pred_dict, tar_dict):
-        model = SentenceTransformer('multi-qa-MiniLM-L6-cos-v1')
+        # model = SentenceTransformer('multi-qa-MiniLM-L6-cos-v1')
+        model = SentenceTransformer('all-mpnet-base-v2')
         score = 0
         for key in pred_dict:
             for key_2 in tar_dict:
                 query_embedding = model.encode(pred_dict[key])
                 passage_embedding = model.encode(tar_dict[key_2])
-                result = util.dot_score(query_embedding, passage_embedding)
+                result = util.cos_sim(query_embedding, passage_embedding)
                 score = max(score, round(result[0][0].item(), 2))
         return score 
     
@@ -448,7 +448,8 @@ class eval_Answer:
         self.dataset = read_data(path)
     
     def SentT(self):
-        model = SentenceTransformer('multi-qa-MiniLM-L6-cos-v1')
+        # model = SentenceTransformer('multi-qa-MiniLM-L6-cos-v1')
+        model = SentenceTransformer('all-mpnet-base-v2')
 
         sent_score = 0
         rouge_score = 0
@@ -470,7 +471,7 @@ class eval_Answer:
 
             query_embedding = model.encode(pred)
             passage_embedding = model.encode(tar)
-            result = util.dot_score(query_embedding, passage_embedding)
+            result = util.cos_sim(query_embedding, passage_embedding)
             result = round(result[0][0].item(), 2)
             sent_score += result
 

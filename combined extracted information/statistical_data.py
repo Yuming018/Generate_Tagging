@@ -9,6 +9,7 @@ def get_data(path):
 
 def count_not_answer(model, answer, Event_count):
     paragraph = set()
+    
     if answer :
         path = f'csv/2_{model}_w_ans_pred_{Event_count}.csv'
     else:
@@ -16,7 +17,8 @@ def count_not_answer(model, answer, Event_count):
     print(path)
     record = get_data(path)
     stat = Counter()
-    for data in record:
+
+    for idx, data in enumerate(record):
         paragraph.add(data[0])
         if data[7] == 'Can answer':
             stat['can answer'] += 1
@@ -39,10 +41,14 @@ def count_golden_ans(answer, Event_count):
     record = get_data(path)
     stat = Counter()
     for data in record:
-
+    
         golden_ans = data[7]
-        temp = data[4].split('[')[1:-1]
-        ref_ans = temp[-1].split(']')[1]
+        if answer:
+            temp = data[2].split('[')[1:-1]
+            ref_ans = temp[-1].split(']')[1]
+        else:
+            temp = data[4].split('[')[1:-1]
+            ref_ans = temp[-1].split(']')[1]
         
         if golden_ans == ref_ans:
             stat['our'] += 1
@@ -56,7 +62,7 @@ def count_golden_ans(answer, Event_count):
     print('Our answer : ', round(stat['our']/total, 2), stat['our'])
     print('llm answer : ', round(stat['llm']/total, 2), stat['llm'])
     print('Not answer : ', round(stat['not']/total, 2), stat['not'])
-    return
+    return 
 
 def count_all_paragraph():
     path = '../data/test.csv'
@@ -84,6 +90,6 @@ if __name__ == '__main__':
 
     count_not_answer(args.Model, args.Answer, args.Event_count)
 
-    # count_golden_ans(args.Answer, args.Event_count)
+    count_golden_ans(args.Answer, args.Event_count)
 
     # count_all_paragraph()

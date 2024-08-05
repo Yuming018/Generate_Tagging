@@ -159,9 +159,9 @@ def statistics_data(dataset, Event_count, categories, our_or_llm):
 
             # LLM no event distance
             if our_or_llm == 'our':
-                if data[-4] < 2:
+                if data[-4] < 5:
                     q_range = 'Near'
-                elif data[-4] < 4:
+                elif data[-4] < 10:
                     q_range = 'Moderate'
                 else:
                     q_range = 'Far'
@@ -209,9 +209,9 @@ def main(method, exampler = 5, answer = False):
         dataset_3 = get_data(f'csv/4_w_ans_correct_ratio_3_{method}.csv')
         dataset_4 = get_data(f'csv/4_w_ans_correct_ratio_4_{method}.csv')
     elif not answer:
-        dataset_2 = get_data(f'csv/4_wo_ans_correct_ratio_2_{method}.csv')
-        dataset_3 = get_data(f'csv/4_wo_ans_correct_ratio_3.csv')
-        dataset_4 = get_data(f'csv/4_wo_ans_correct_ratio_4.csv')
+        dataset_2 = get_data(f'csv/4_wo_ans_correct_ratio_2_MiniLM_50.csv')
+        dataset_3 = get_data(f'csv/4_wo_ans_correct_ratio_3_MiniLM_50.csv')
+        dataset_4 = get_data(f'csv/4_wo_ans_correct_ratio_4_MiniLM_50.csv')
 
     llm_dataset_respective = get_data(f'csv/4_llm_correct_ratio_5_respective.csv')
     llm_dataset_together = get_data(f'csv/4_llm_correct_ratio_5_together.csv')
@@ -254,7 +254,6 @@ def main(method, exampler = 5, answer = False):
             total_record[4][level] += stat_type_4[type][level]
     
     print(total_record)
-    input()
 
     # processed_total = process_data(total_record, categories)
     # display_question_defficulty_histogram(processed_total, categories, 'Question type total', "", x_label='number of events')
@@ -295,6 +294,8 @@ def main(method, exampler = 5, answer = False):
     for type in stat_range_4:
         for level in stat_range_4[type]:
             record[type][level] += stat_range_4[type][level]
+
+    print('\n', record)
     
     processed_record = process_data(record, categories)
     display_question_defficulty_histogram(processed_record, categories, 'Question range total', "total range", x_label="Argument distance")

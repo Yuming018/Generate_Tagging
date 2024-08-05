@@ -20,8 +20,9 @@ def get_data(path):
 def count_attribute_tagging(path, question, attribute_tagging):
     data = get_data(path)
     dic = set()
-    ques_set = set()
+    # ques_set = set()
     
+    current_question = ""
     for i in range(len(data)):
         if data[i][event_idx]:
             label = data[i][event_idx].split(' - ')[0]
@@ -32,13 +33,14 @@ def count_attribute_tagging(path, question, attribute_tagging):
         attribute = data[i][0]
         ques = data[i][2]
         attribute_tagging[attribute][label] += 1
-        if ques not in ques_set:
+        if ques != current_question:
             attribute_tagging[attribute]['all'] += 1
-            ques_set.add(ques)
-        
-        if data[i][ques_idx] not in dic:
+            current_question = ques
             question[attribute] += 1
-        dic.add(data[i][ques_idx])
+        
+        # if data[i][ques_idx] not in dic:
+            
+        # dic.add(data[i][ques_idx])
     
     return question, attribute_tagging
 
@@ -132,6 +134,17 @@ def longest_common_subsequence(text, text2):
     
     return lcs_table[text1_len][text2_len] / (text1_len + text2_len - lcs_table[text1_len][text2_len])
 
+def other_create_data_method(path):
+    dataset = get_data(path)
+    ques = []
+    story_name = ""
+    for idx in range(len(dataset)):
+        dict = {}
+        current_story_name = dataset[idx][4]
+        if current_story_name != story_name:
+            ques.append(dataset[idx][ques_idx])
+            story_name = current_story_name
+    return ques
 
 if __name__ == '__main__':
     question = Counter()
@@ -139,11 +152,23 @@ if __name__ == '__main__':
     question, attribute_tagging = count_attribute_tagging('data/train.csv', question, attribute_tagging)
     question, attribute_tagging = count_attribute_tagging('data/valid.csv', question, attribute_tagging)
     question, attribute_tagging = count_attribute_tagging('data/test.csv', question, attribute_tagging)
+    
+    # ques = other_create_data_method('data/train.csv')
+    # temp = Counter()
+    # for q in ques:
+    #     temp[q] += 1
+    
+    # for q in ques:
+    #     if temp[q] != 1:
+    #         print(q)
+    # print(len(set(ques)))
+    # print(len(ques))
 
     total = sum(question.values())
-    # print(question)
-    # print("Question total : ", total)
-    # input()
+    
+    print(question)
+    print("Question total : ", total)
+    input()
 
     for attribute in attribute_tagging:
         print('\n',attribute)

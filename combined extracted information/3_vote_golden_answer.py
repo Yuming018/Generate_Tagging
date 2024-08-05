@@ -12,7 +12,9 @@ from sklearn.metrics.pairwise import cosine_similarity
 from sentence_transformers import SentenceTransformer, util
 
 metric = evaluate.load("bleu")
-model = SentenceTransformer('bert-base-nli-mean-tokens')
+model = SentenceTransformer('all-mpnet-base-v2')
+snet_T = SentenceTransformer('all-mpnet-base-v2')
+sleep_time = 5
 
 def get_data(path):
     data = pd.read_csv(path)
@@ -44,13 +46,12 @@ def main(ranking_model = 'deberta', answer = False, Event_count = 2, our_or_llm 
     elif our_or_llm == 'fairytale':
         dataset = get_data('../data/test.csv')
 
-    snet_T = SentenceTransformer('multi-qa-MiniLM-L6-cos-v1')
     record = []
     
     for idx, data in tqdm(enumerate(dataset)):
-        if idx < 900:
-            continue
-        # if idx == 900:
+        # if idx < 2903:
+        #     continue
+        # if idx == 2904:
         #     break
         
         if our_or_llm == 'our':
@@ -63,7 +64,11 @@ def main(ranking_model = 'deberta', answer = False, Event_count = 2, our_or_llm 
             insert_index = 7
             if answer:
                 save_path = f'csv/3_question_ans_w_golden_ans_{Event_count}.csv'
-                ans = pred[1].split(']')[1]
+                try:
+                    ans = pred[1].split(']')[1]
+                except:
+                    print(pred)
+                    continue
             elif not answer:
                 save_path = f'csv/3_question_w_golden_ans_{Event_count}.csv'
                 temp = data[4].split('[')[1:-1]
@@ -84,22 +89,25 @@ def main(ranking_model = 'deberta', answer = False, Event_count = 2, our_or_llm 
                 break
         
         data = list(data)
-        ans_flag = check_ans(ans, ques, context)
-        if ans_flag:
-            data.insert(insert_index, ans)
-        elif not ans_flag:
-            result, gpt_ans = create_ans(ques, context)
-            if result[0][0] > 0.8:
-                data.insert(insert_index, gpt_ans)
-            else:
-                data.insert(insert_index, "False, " + gpt_ans)
-        
+        ans_flag, error_flag = check_ans(ans, ques, context)
+        if error_flag:
+            data.insert(insert_index, "False")
+        else:
+            if ans_flag:
+                data.insert(insert_index, ans)
+            elif not ans_flag:
+                result, gpt_ans = create_ans(ques, context)
+                if result[0][0] > 0.8:
+                    data.insert(insert_index, gpt_ans)
+                else:
+                    data.insert(insert_index, "False, " + gpt_ans)
         record.append(data)
         save_csv(record, save_path, our_or_llm)
     return
 
 def check_ans(ans, ques, context):
     retry_count = 0
+    error_flag = False
     while retry_count < 3:
         correct_count = 0
         # gpt_text = f'Without considering completeness and details, is this answer correct in responding to this question? Please answer "Yes" or "No".Answer : {gemini_ans} Question : {ques}, Context : {context}'
@@ -116,9 +124,9 @@ def check_ans(ans, ques, context):
                 elif 'No' in gpt_ans or 'no' in gpt_ans:
                     break
             except Exception as e:
-                print(f"An error occurred: {e}")
+                print(f"Chatgpt : An error occurred: {e}")
                 retry_count_gpt += 1
-                time.sleep(10)
+                time.sleep(sleep_time)
         gemini_text = f'Context : {context}.\nQuestion : {ques}.\nAnswer : {ans}.\nIs this answer correct in responding to this question? Please answer "Yes" or "No".'
         retry_count_gemini = 0
         while retry_count_gemini < 5:
@@ -130,19 +138,25 @@ def check_ans(ans, ques, context):
                 elif 'No' in gemini_ans or 'no' in gemini_ans:
                     break
             except Exception as e:
-                print(f"An error occurred: {e}")
+                print(f"Gemini : An error occurred: {e}")
+                if "response.prompt_feedback" in str(e):
+                    error_flag = True
+                    break
                 retry_count_gemini += 1
-                time.sleep(10)
+                time.sleep(sleep_time)
         retry_count += 1
+        if error_flag:
+            break
 
         if correct_count == 2:
             break
-    return True if correct_count == 2 else False
+    return (True, error_flag) if correct_count == 2 else (False, error_flag)
 
 def create_ans(ques, context):
     gemini_ans = ""
     gpt_ans = "" 
     retry_count = 0
+    error_flag = False
     while retry_count < 7:
         gpt_text = f'Extract the answer from the text and reply with just the answer. Question : {ques}, Context : {context}'
         # Example: Context : let me try , " cried biernuga , the bony fish , but he had no better luck , and no more had kumbal , the bream , nor any of the rest . " it is no use , " exclaimed thuggai , at last . " the wood is too wet . we must just sit and wait till the sun comes out again and dries it . " then a very little fish indeed , not more than four inches long and the youngest of the tribe , bowed himself before thuggai , saying , " ask my father , guddhu the cod , to light the fire . he is skilled in magic more than most fishes . " so thuggai asked him , and guddhu stripped some pieces of bark off a tree , and placed them on top of the smouldering ashes . then he knelt by the side of the fire and blew at it for a long while , till slowly the feeble red glow became a little stronger and the edges of the bark showed signs of curling up . when the rest of the tribe saw this they pressed close , keeping their backs towards the piercing wind , but guddhu told them they must go to the other side , as he wanted the wind to fan his fire . by and by the spark grew into a flame , and a merry crackling was heard .\
@@ -158,9 +172,9 @@ def create_ans(ques, context):
                     raise ValueError("Response contains newline")
                 break
             except Exception as e:
-                print(f"An error occurred: {e}")
+                print(f"Chatgpt : An error occurred: {e}")
                 retry_count_gpt += 1
-                time.sleep(10)
+                time.sleep(sleep_time)
 
         gemini_text = f'Extract the answer from the text and reply with just the answer. Respond in {len(gpt_ans.split())} words. Question : {ques}, Context : {context}'
         retry_count_gemini = 0
@@ -171,25 +185,22 @@ def create_ans(ques, context):
                     raise ValueError("Response contains newline")
                 break 
             except Exception as e:
-                print(f"An error occurred: {e}")
+                if e == "The `response.parts` quick accessor only works for a single candidate, but none were returned. Check the `response.prompt_feedback` to see if the prompt was blocked.":
+                    error_flag = True
+                    break
+                print(f"Gemini : An error occurred: {e}")
                 retry_count_gemini += 1
-                time.sleep(10)
+                time.sleep(sleep_time)
         retry_count += 1
-        # bleu
-        # result = metric.compute(predictions=[gemini_ans], references=[gpt_ans])
+        
+        if error_flag:
+            break
 
         #sntence_t
-        # query_embedding = snet_T.encode(gpt_ans)
-        # passage_embedding = snet_T.encode(gemini_ans)
-        # result = util.dot_score(query_embedding, passage_embedding)
+        query_embedding = snet_T.encode(gpt_ans)
+        passage_embedding = snet_T.encode(gemini_ans)
+        result = util.pytorch_cos_sim(query_embedding, passage_embedding)
 
-        #Cosine similarity
-        embeddings1 = model.encode([gpt_ans])
-        embeddings2 = model.encode([gemini_ans])
-        result = cosine_similarity(embeddings1, embeddings2)
-        # print(gpt_ans)
-        # print(result)
-        # input()
         if result[0][0] < 0.8:
             continue
         else :

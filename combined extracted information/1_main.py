@@ -52,10 +52,6 @@ def main(device = 'cpu',
     print('Dataset : ', len(dataset))
     for idx, (paragraph, context, target) in tqdm(enumerate(dataset)):
         
-        # if count == 0:
-        # if paragraph == 'anent-giant-who-did-not-have-his-heart-about-him15 ~ 17':
-        if idx < 106:
-            continue
         print('\n', paragraph)
         question_set, score_set, text_set, question_difficulty, question_5w1h, generate_question_type, Event_graph, Relation_graph = create_knowledge_graph(gen_answer, 
                                                                                                                                     context, 
@@ -86,7 +82,7 @@ def main(device = 'cpu',
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--Model', '-m', type=str, choices=['Mt0', 'T5', 'Bart', 'roberta', 'gemma', 'flant5'], default='flant5')
+    parser.add_argument('--Model', '-m', type=str, choices=['Mt0', 'T5', 'flant5'], default='flant5')
     parser.add_argument('--Answer', '-a', type=bool, default=False)
     parser.add_argument('--Event_count', '-c', type=int, default=2)
     args = parser.parse_args()
