@@ -11,7 +11,7 @@ pip install -r requirements.txt
 cd Generate_Tagging
 mkdir data
 cd data
-gdown 15fHorbAMDJWYPkMupn0lXTDco8Idr0b9
+gdown 1q6UdAc_lhS49Ivx5HAigVHiS4j-qSTbi
 unzip data.zip
 ```
 
