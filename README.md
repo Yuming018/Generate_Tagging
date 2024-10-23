@@ -53,3 +53,18 @@ python main.py -e 訓練幾次 -b 批次數 -g 訓練甚麼資料 -m 訓練哪�
 |--- README.md
 |--- .gitignore
 ```
+
+## 相關連結
+資料連結 : https://drive.google.com/file/d/1q6UdAc_lhS49Ivx5HAigVHiS4j-qSTbi/view?usp=drive_link
+結果 : https://drive.google.com/file/d/1NYrX0DKeUcWI4xrmnFRwvQ739cF90vms/view?usp=drive_link
+```
+檔案名稱 : 
+w_ans_correct_ratio_x : 同時生成問題與答案
+wo_ans_correct_ratio_x : 單純生成問題
+x : 為2, 3, 4 ，代表有多少個資訊輸入給模型生成問題
+
+欄位 : 
+Prediction : 生成的問題與答案
+Correct ans ratio : 與 Golden ans 相比，相符的有多少個
+Question_difficulty : Event(主詞與代名詞相離多少句子), Relation(兩起事件相離多少句子)
+```
