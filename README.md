@@ -7,6 +7,7 @@ pip install -r requirements.txt
 ```
 
 ## 下載資料 
+資料連結 : https://drive.google.com/file/d/1q6UdAc_lhS49Ivx5HAigVHiS4j-qSTbi/view?usp=drive_link
 ```
 cd Generate_Tagging
 mkdir data
@@ -54,8 +55,7 @@ python main.py -e 訓練幾次 -b 批次數 -g 訓練甚麼資料 -m 訓練哪�
 |--- .gitignore
 ```
 
-## 相關連結
-資料連結 : https://drive.google.com/file/d/1q6UdAc_lhS49Ivx5HAigVHiS4j-qSTbi/view?usp=drive_link
+## 結果csv
 結果 : https://drive.google.com/file/d/1NYrX0DKeUcWI4xrmnFRwvQ739cF90vms/view?usp=drive_link
 ```
 檔案名稱 : 
